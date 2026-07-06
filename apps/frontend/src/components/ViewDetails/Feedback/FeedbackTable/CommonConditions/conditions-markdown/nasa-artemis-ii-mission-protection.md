@@ -1,0 +1,1 @@
+- Transmissions overlapping 2270-2275 or 2285-2290 MHz are not permitted during ==[Mission Name/Launch Vehicle]== between ==[time]== prior to launch (T-==[x]==) hours and ==[time]== after launch (T+==[x]==hours).

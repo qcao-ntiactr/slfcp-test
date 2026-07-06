@@ -1,0 +1,15 @@
+.env
+node_modules/
+dist/
+logs/
+.last-run.json
+.local.ts
+.vscode
+.zencoder
+.codex
+**/error-context.md
+
+# SonarQube files (if accidentally added in future)
+*sonar*
+.sonarqube/
+sonar-project.properties

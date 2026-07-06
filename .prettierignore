@@ -1,0 +1,13 @@
+.eslintrc.cjs
+.prettierrc
+apps/backend/api/open_api_specs/openapi.yaml
+apps/backend/nodemon.json
+apps/frontend/index.html
+dist/
+node_modules/
+pnpm-lock.yaml
+pnpm-workspace.yaml
+README.md
+secrets.json
+tsconfig.base.json
+tsconfig.json

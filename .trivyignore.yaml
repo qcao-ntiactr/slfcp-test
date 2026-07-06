@@ -1,0 +1,213 @@
+# ===============================
+# Trivy Ignore File
+# ===============================
+#
+# Purpose:
+#   Defines approved vulnerability exceptions for Trivy scanning.
+#   This file documents temporary risk acceptance and compensating
+#   controls for findings that are not exploitable in the deployed
+#   application or container image.
+#
+# Rules:
+#   - Only HIGH or CRITICAL findings may be ignored when:
+#     * The vulnerability is not reachable at runtime, OR
+#     * The affected package is used exclusively for build-time,
+#       development, or CI/CD tooling, OR
+#     * No viable fix exists and the risk is formally accepted.
+#
+# Required fields for each ignore entry:
+#   - id        : CVE identifier (e.g., CVE-2024-12345)
+#   - package   : Affected package name
+#   - ecosystem : Package ecosystem (npm, gobinary, os, etc.)
+#   - severity  : Vulnerability severity (HIGH or CRITICAL only)
+#   - reason    : Clear, specific justification explaining why the
+#                 vulnerability is not exploitable in this application
+#                 or container image
+#   - controls  : Applicable compensating controls (e.g., NIST SP 800-53)
+#   - risk_acceptance :
+#                 Statement documenting formal acceptance of residual risk
+#
+# Governance:
+#   - All ignores must be reviewed prior to expiration.
+#   - Permanent ignores are not permitted.
+#   - CRITICAL vulnerabilities require documented security approval.
+#   - Ignored vulnerabilities must not be reachable in production
+#     execution paths.
+#
+# Compliance Alignment:
+#   - NIST SP 800-53: RA-5 (Vulnerability Scanning)
+#   - FedRAMP: Vulnerability Management Requirements
+#   - SOC 2 CC7.1, CC7.2
+#
+# Review Policy:
+#   - All entries must be reviewed prior to expiration
+#   - Expired entries MUST be removed or updated
+#   - CI pipelines should fail on expired ignore entries
+#
+# ===============================
+
+vulnerabilities:
+  # ----------------------------------------------------
+  # tar (bundled inside pnpm – build-time only)
+  # ----------------------------------------------------
+  - id: CVE-2026-24842
+    package: tar
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable tar version is bundled internally within pnpm and is used
+      only during build-time package extraction in a controlled CI environment.
+      No untrusted tar archives are processed at runtime, and pnpm is not
+      included in the production runtime image.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted as the vulnerability is limited to build-time tooling
+      and is not exploitable in the deployed production environment.
+
+  - id: CVE-2026-26960
+    package: tar
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The affected tar version is transitively included via pnpm and is utilized
+      exclusively during dependency installation in CI. The application does not
+      extract or process user-supplied tar archives at runtime, and pnpm is not
+      present in the production runtime container image.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted because exposure is limited to controlled build-time
+      dependency extraction and does not impact production runtime systems.
+
+  - id: CVE-2026-29786
+    package: tar
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable tar version (7.5.10) is present as a transitive dependency of package management
+      tooling (e.g., npm or pnpm) within the container image. It is not used by the application at runtime
+      to extract or process user-supplied archives. The hardlink path traversal vector requires processing
+      crafted tar archives, which does not occur in this application's execution context.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted as the vulnerable functionality is not reachable in production and is limited to
+      controlled build-time or dependency management operations, with no exposure to untrusted archives.
+
+  - id: CVE-2026-31802
+    package: tar
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The affected tar version (7.5.11) exists only as a transitive dependency of internal tooling and is
+      not included in the production application bundle. The vulnerability involves symlink traversal during
+      archive extraction, which is not performed on untrusted input within the runtime environment.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted because the vulnerable code path is not exercised in production and there is no
+      mechanism for external input to trigger archive extraction, confining exposure to controlled environments.
+
+  # --------------------------------------------------------------------
+  # minimatch (transitive dependency – build-time tooling only)
+  # --------------------------------------------------------------------
+  - id: CVE-2026-26996
+    package: minimatch
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable minimatch version is introduced transitively via development
+      and build tooling. It is not used in application runtime logic and does not
+      process user-supplied glob patterns. Exposure is limited to controlled
+      development and CI environments.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted as the vulnerability is limited to build-time tooling and
+      cannot be exploited through production runtime application inputs.
+
+  - id: CVE-2026-27903
+    package: minimatch
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable minimatch version is introduced transitively via development
+      and build tooling (npm/pnpm internal dependencies). It is not used in
+      application runtime logic and does not process user-supplied glob patterns.
+      Exposure is limited to controlled development, CI, and container build
+      environments.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted because the vulnerable code path is only reachable through
+      package management tooling during build or administrative operations and
+      is not exposed to production runtime application inputs.
+
+  - id: CVE-2026-27904
+    package: minimatch
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable minimatch version exists as a transitive dependency of npm
+      or pnpm global tooling within the container image. It is not part of the
+      deployed application bundle and does not evaluate externally supplied glob
+      patterns at runtime. Usage is restricted to build-time and maintenance
+      operations.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted as the vulnerability does not impact production request
+      handling or business logic and is limited to controlled package management
+      execution contexts.
+
+  # --------------------------------------------------------------------
+  # picomatch (transitive dependency – build-time tooling only)
+  # --------------------------------------------------------------------
+  - id: CVE-2026-33671
+    package: picomatch
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable picomatch version (4.0.3) is present as a transitive dependency of build-time tooling
+      (e.g., bundlers, linters, or package managers) within the container image. It is not included in the
+      deployed production bundle and does not process user-controlled input at runtime. The ReDoS vector
+      requires crafted extglob patterns, which are not accepted from external sources in this application.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+    risk_acceptance: >
+      Risk is accepted as the vulnerable code is not reachable in production execution paths and is limited
+      to controlled build-time or internal tooling contexts, with no exposure to untrusted input.
+
+  # --------------------------------------------------------------------
+  # undici (transitive dependency – npm internal tooling only)
+  # --------------------------------------------------------------------
+  - id: CVE-2026-12151
+    package: undici
+    ecosystem: npm
+    severity: HIGH
+    reason: >
+      The vulnerable undici version (6.26.0) is present as a transitive dependency of the npm package
+      manager bundled within the Node.js runtime image (`/usr/local/lib/node_modules/npm/node_modules/undici`).
+      The affected functionality relates to WebSocket frame processing that can result in unbounded memory
+      growth. This application does not expose or utilize the bundled npm-internal undici WebSocket
+      implementation during normal production operation, and npm is not used to process external requests
+      at runtime.
+    controls:
+      - NIST-800-53:SI-2 # Flaw Remediation
+      - NIST-800-53:RA-5 # Vulnerability Monitoring and Scanning
+      - NIST-800-53:CM-7 # Least Functionality
+    risk_acceptance: >
+      Risk is accepted because the vulnerable component exists only within the npm package manager's
+      internal dependency tree and is not reachable through application execution paths in production.
+      Exploitation requires interaction with the affected WebSocket functionality, which is not exposed
+      by the deployed service. The vulnerability will be remediated through a future Node.js/npm base
+      image update that includes undici 6.27.0 or later.

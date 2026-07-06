@@ -1,0 +1,2784 @@
+components:
+  parameters:
+    UserIdHeader:
+      in: header
+      name: user_id
+      required: true
+      schema:
+        type: string
+    UserNameHeader:
+      in: header
+      name: user_name
+      required: true
+      schema:
+        type: string
+    UserTypeHeader:
+      in: header
+      name: user_type
+      required: true
+      schema:
+        $ref: '#/components/schemas/UserType'
+  schemas:
+    Action:
+      properties:
+        action:
+          $ref: '#/components/schemas/ActionType'
+        details:
+          nullable: true
+          type: string
+        createdAt:
+          description: Timestamp the action was created (ISO 8601 format with time
+            zone)
+          format: date-time
+          type: string
+        federal_agency_abbr:
+          nullable: true
+          type: string
+        federal_agency_id:
+          nullable: true
+          type: integer
+        federal_agency_name:
+          nullable: true
+          type: string
+        id:
+          type: integer
+        request_id:
+          type: integer
+        user_id:
+          type: string
+        user_name:
+          type: string
+        user_type:
+          $ref: '#/components/schemas/UserType'
+      required:
+      - request_id
+      - user_id
+      - user_name
+      - user_type
+      - action
+      type: object
+    ActionType:
+      enum:
+      - approve
+      - finalize_denial
+      - approve_with_conditions
+      - concur
+      - concur_with_conditions
+      - not_concur
+      - request_revisions
+      - resubmit
+      - auto_approve
+      type: string
+    Approval:
+      properties:
+        condition:
+          type: string
+        createdAt:
+          description: Timestamp the record was created in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        date_approved:
+          description: Date approved in ISO 8601 format with time zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        id:
+          type: integer
+        is_final:
+          type: boolean
+        read:
+          type: boolean
+        request_id:
+          type: integer
+        user_id:
+          type: string
+        updatedAt:
+          description: Timestamp the record was updates in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+      required:
+      - request_id
+      - date_approved
+      - condition
+      type: object
+    Comment:
+      properties:
+        comment:
+          type: string
+        createdAt:
+          description: Timestamp the comment was created (ISO 8601 format with time
+            zone)
+          format: date-time
+          type: string
+        federal_agency_abbr:
+          type: string
+        federal_agency_id:
+          nullable: true
+          type: integer
+        federal_agency_name:
+          type: string
+        id:
+          type: integer
+        is_internal:
+          type: boolean
+        request_id:
+          type: integer
+        user_id:
+          type: string
+        user_name:
+          type: string
+        user_type:
+          $ref: '#/components/schemas/UserType'
+      required:
+      - request_id
+      - user_id
+      - comment
+      type: object
+    Concurrence:
+      properties:
+        concurred:
+          type: boolean
+        conditions:
+          type: string
+        createdAt:
+          description: Timestamp the record was created in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        entity_abbr:
+          nullable: true
+          type: string
+        entity_id:
+          nullable: true
+          type: integer
+        entity_name:
+          nullable: true
+          type: string
+        id:
+          type: integer
+        request_id:
+          type: integer
+        updatedAt:
+          description: Timestamp the record was updates in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        user_id:
+          type: string
+        user_name:
+          type: string
+        user_type:
+          $ref: '#/components/schemas/UserType'
+      required:
+      - request_id
+      - user_id
+      - concurred
+      type: object
+    Denial:
+      properties:
+        createdAt:
+          description: Timestamp the record was created in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        date_denied:
+          description: Date denied in ISO 8601 format with time zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        id:
+          type: integer
+        is_final:
+          type: boolean
+        read:
+          type: boolean
+        reason:
+          description: Denial Reason.
+          type: string
+        request_id:
+          type: integer
+        user_id:
+          type: string
+        updatedAt:
+          description: Timestamp the record was updates in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+      required:
+      - request_id
+      - date_denied
+      - reason
+      type: object
+    Receiver:
+      properties:
+        antenna_altitude:
+          type: integer
+        antenna_altitude_unit:
+          enum:
+          - ft
+          - m
+          - km
+          type: string
+        antenna_beamwidth:
+          type: integer
+        antenna_gain:
+          type: integer
+        antenna_type:
+          type: string
+        latitude_of_receiving_antenna:
+          format: decimal
+          type: number
+        location_of_receiving_ground_station:
+          enum:
+          - first_stage
+          - second_stage
+          - ground
+          type: string
+        longitude_of_receiving_antenna:
+          format: decimal
+          type: number
+        transmission_end:
+          format: date-time
+          type: string
+        transmission_start:
+          format: date-time
+          type: string
+    Frequency:
+      properties:
+        createdAt:
+          description: Timestamp the record was created in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        eirp:
+          format: float
+          type: number
+        eirp_unit:
+          enum:
+          - Watts
+          - dBW
+          - milliWatts
+          - dBm
+          type: string
+        frequency:
+          format: float
+          type: number
+        id:
+          type: integer
+        location_of_transmitter_on_vehicle_or_platform:
+          enum:
+          - first_stage
+          - second_stage
+          - ground
+          type: string
+        minus_20db_bandwidth:
+          format: decimal
+          maximum: 99.99
+          minimum: -99.99
+          type: number
+        minus_20db_bandwidth_before_or_after_filtering:
+          enum:
+          - before_filtering
+          - after_filtering
+          type: string
+        minus_3db_bandwidth:
+          format: decimal
+          maximum: 99.99
+          minimum: -99.99
+          type: number
+        minus_3db_bandwidth_before_or_after_filtering:
+          enum:
+          - before_filtering
+          - after_filtering
+          type: string
+        minus_60db_bandwidth:
+          format: decimal
+          maximum: 99.99
+          minimum: -99.99
+          type: number
+        minus_60db_bandwidth_before_or_after_filtering:
+          enum:
+          - before_filtering
+          - after_filtering
+          type: string
+        nature_of_modulating_signals:
+          maxLength: 50
+          type: string
+        emission_designator:
+          maxLength: 50
+          type: string
+        request_id:
+          type: integer
+        transmitted_bandwidth:
+          format: decimal
+          maximum: 99.99
+          minimum: -99.99
+          type: number
+        transmitted_bandwidth_is_signal_filtered:
+          enum:
+          - filtered
+          - not_filtered
+          type: string
+        transmitted_bandwidth_justification:
+          type: string
+        tx_antenna_altitude:
+          maximum: 99999
+          minimum: -300
+          type: integer
+        tx_antenna_altitude_unit:
+          enum:
+          - ft
+          - m
+          - km
+          type: string
+        tx_antenna_beamwidth:
+          maximum: 999
+          minimum: 1
+          type: integer
+        tx_antenna_gain:
+          maximum: 99
+          minimum: 1
+          type: integer
+        tx_antenna_type:
+          maxLength: 50
+          type: string
+        tx_transmission_end:
+          description: The end time of transmission in ISO 8601 format with time zone
+            (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        tx_transmission_start:
+          description: The start time of transmission in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        receivers:
+          items:
+            $ref: '#/components/schemas/Receiver'
+          type: array
+        updatedAt:
+          description: Timestamp the record was updates in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+      required:
+      - request_id
+      - frequency
+      - location_of_transmitter_on_vehicle_or_platform
+      - eirp
+      - eirp_unit
+      - transmitted_bandwidth
+      - transmitted_bandwidth_is_signal_filtered
+      - transmitted_bandwidth_justification
+      - minus_3db_bandwidth
+      - minus_3db_bandwidth_before_or_after_filtering
+      - minus_20db_bandwidth
+      - minus_20db_bandwidth_before_or_after_filtering
+      - minus_60db_bandwidth
+      - minus_60db_bandwidth_before_or_after_filtering
+      - nature_of_modulating_signals
+      - emission_designator
+      - tx_transmission_start
+      - tx_transmission_end
+      - tx_antenna_type
+      - tx_antenna_gain
+      - tx_antenna_beamwidth
+      - tx_antenna_altitude
+      - tx_antenna_altitude_unit
+      - receivers
+      type: object
+    FrequencyDraft:
+      properties:
+        createdAt:
+          format: date-time
+          type: string
+        eirp:
+          format: float
+          type: number
+        eirp_unit:
+          enum:
+          - Watts
+          - dBW
+          - milliWatts
+          - dBm
+          type: string
+        frequency:
+          format: float
+          type: number
+        id:
+          type: integer
+        location_of_transmitter_on_vehicle_or_platform:
+          enum:
+          - first_stage
+          - second_stage
+          - ground
+          type: string
+        minus_20db_bandwidth:
+          format: decimal
+          type: number
+        minus_20db_bandwidth_before_or_after_filtering:
+          enum:
+          - before_filtering
+          - after_filtering
+          type: string
+        minus_3db_bandwidth:
+          format: decimal
+          type: number
+        minus_3db_bandwidth_before_or_after_filtering:
+          enum:
+          - before_filtering
+          - after_filtering
+          type: string
+        minus_60db_bandwidth:
+          format: decimal
+          type: number
+        minus_60db_bandwidth_before_or_after_filtering:
+          enum:
+          - before_filtering
+          - after_filtering
+          type: string
+        nature_of_modulating_signals:
+          type: string
+        emission_designator:
+          type: string
+        transmitted_bandwidth:
+          format: decimal
+          type: number
+        transmitted_bandwidth_is_signal_filtered:
+          enum:
+          - filtered
+          - not_filtered
+          type: string
+        transmitted_bandwidth_justification:
+          type: string
+        tx_antenna_altitude:
+          type: integer
+        tx_antenna_altitude_unit:
+          enum:
+          - ft
+          - m
+          - km
+          type: string
+        tx_antenna_beamwidth:
+          type: integer
+        tx_antenna_gain:
+          type: integer
+        tx_antenna_type:
+          type: string
+        tx_transmission_end:
+          format: date-time
+          type: string
+        tx_transmission_start:
+          format: date-time
+          type: string
+        receivers:
+          items:
+            $ref: '#/components/schemas/Receiver'
+          type: array
+        updatedAt:
+          format: date-time
+          type: string
+      type: object
+    Request:
+      allOf:
+      - $ref: '#/components/schemas/RequestFrequencyBase'
+      properties:
+        ecf_cartesian_vectors_format_file:
+          format: binary
+          type: string
+        ground_track_of_launch_vehicle_2d_img_file:
+          format: binary
+          type: string
+      required:
+      - ecf_cartesian_vectors_format_file
+      - ground_track_of_launch_vehicle_2d_img_file
+    RequestBase:
+      properties:
+        alternate_poc_email:
+          format: email
+          maxLength: 50
+          type: string
+        alternate_poc_name:
+          maxLength: 50
+          type: string
+        alternate_poc_phone:
+          maxLength: 12
+          type: string
+        call_sign:
+          maxLength: 8
+          type: string
+        city:
+          maxLength: 25
+          type: string
+        createdAt:
+          description: Timestamp the record was created in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        current_revision:
+          type: boolean
+        ecf_cartesian_vectors_format_file_desc:
+          type: string
+        fcc_filing_date:
+          description: This is optionally entered by the user and is stored as an
+            ISO date-time Zulu, otherwise defaults to current date-time
+          format: date-time
+          type: string
+        ground_track_from_liftoff_until_payload_separation:
+          type: string
+        ground_track_of_launch_vehicle_2d_img_file_desc:
+          type: string
+        id:
+          type: integer
+        user_id:
+          type: string
+        latitude:
+          format: decimal
+          maximum: 90.0
+          minimum: -90.0
+          type: number
+        launch_datetime_backup:
+          description: The end time of launch in ISO 8601 format with time zone (e.g.,
+            "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        launch_datetime_primary:
+          description: The start time of launch in ISO 8601 format with time zone
+            (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+        longitude:
+          format: decimal
+          maximum: 180.0
+          minimum: -180.0
+          type: number
+        mission_name:
+          maxLength: 50
+          type: string
+        name_of_launch_vehicle:
+          maxLength: 50
+          type: string
+        name_of_licensee:
+          maxLength: 50
+          type: string
+        number_of_frequencies:
+          maximum: 50
+          minimum: 1
+          type: integer
+        orbital_location:
+          type: string
+        primary_poc_email:
+          format: email
+          maxLength: 50
+          type: string
+        primary_poc_name:
+          maxLength: 50
+          type: string
+        primary_poc_phone:
+          maxLength: 12
+          type: string
+        read:
+          type: boolean
+        revision:
+          type: integer
+        root_request_id:
+          type: integer
+        state:
+          maxLength: 2
+          type: string
+        status:
+          $ref: '#/components/schemas/Status'
+        updatedAt:
+          description: Timestamp the record was updated in ISO 8601 format with time
+            zone (e.g., "2024-12-09T15:30:00Z").
+          format: date-time
+          type: string
+      required:
+      - user_id
+      - mission_name
+      - name_of_licensee
+      - call_sign
+      - name_of_launch_vehicle
+      - city
+      - state
+      - latitude
+      - longitude
+      - launch_datetime_primary
+      - launch_datetime_backup
+      - number_of_frequencies
+      - ground_track_from_liftoff_until_payload_separation
+      - ecf_cartesian_vectors_format_file_desc
+      - ground_track_of_launch_vehicle_2d_img_file_desc
+      - primary_poc_name
+      - primary_poc_email
+      - primary_poc_phone
+      - alternate_poc_name
+      - alternate_poc_email
+      - alternate_poc_phone
+      - status
+      - revision
+      type: object
+    RequestSummary:
+      allOf:
+      - $ref: '#/components/schemas/RequestBase'
+      properties:
+        frequencies:
+          description: Array of frequency values for this request
+          items:
+            type: number
+            format: float
+          type: array
+        unreadMessageCount:
+          description: Number of unread messages in inquiries where the user's entity is involved. Only included when user_id parameter is provided, entity-based filtering is applied, and count is greater than 0. Omitted when count is 0 or user's entity is not involved in any inquiries for this request.
+          type: integer
+          minimum: 1
+          example: 3
+      required:
+      - frequencies
+    RequestsResponse:
+      properties:
+        data:
+          description: Array of request summaries with entity-based filtering applied
+          items:
+            $ref: '#/components/schemas/RequestSummary'
+          type: array
+        totalCount:
+          description: Total number of requests matching the filter criteria
+          type: integer
+          minimum: 0
+          example: 150
+        totalPages:
+          description: Total number of pages based on pageSize
+          type: integer
+          minimum: 0
+          example: 15
+      required:
+      - data
+      - totalCount
+      - totalPages
+      type: object
+      example:
+        data:
+          - id: 20
+            mission_name: "Launch Request 1"
+            name_of_licensee: "Commercial Corp"
+            call_sign: "COMM1"
+            status: "UNDER_NTIA_INITIAL_REVIEW"
+            frequencies: [2400.0, 2450.0]
+            unreadMessageCount: 2
+          - id: 21
+            mission_name: "Launch Request 2"
+            name_of_licensee: "NASA Request"
+            call_sign: "NASA1"
+            status: "UNDER_FEDERAL_AGENCIES_REVIEW"
+            frequencies: [2500.0]
+            # Note: unreadMessageCount omitted when 0
+        totalCount: 150
+        totalPages: 15
+    RequestDetails:
+      allOf:
+      - $ref: '#/components/schemas/RequestFrequencyBase'
+      properties:
+        ecf_cartesian_vectors_format_file:
+          description: file content is base64 encoded
+          type: string
+        ground_track_of_launch_vehicle_2d_img_file:
+          description: file content is base64 encoded
+          type: string
+      required:
+      - ecf_cartesian_vectors_format_file
+      - ground_track_of_launch_vehicle_2d_img_file
+    RequestDraft:
+      properties:
+        alternate_poc_email:
+          type: string
+        alternate_poc_name:
+          type: string
+        alternate_poc_phone:
+          type: string
+        call_sign:
+          type: string
+        city:
+          type: string
+        createdAt:
+          format: date-time
+          type: string
+        ecf_cartesian_vectors_format_file:
+          description: file content is base64 encoded
+          type: string
+        ecf_cartesian_vectors_format_file_desc:
+          type: string
+        ecf_cartesian_vectors_format_file_path:
+          type: string
+        fcc_filing_date:
+          format: date-time
+          type: string
+        frequencies:
+          items:
+            $ref: '#/components/schemas/FrequencyDraft'
+          type: array
+        ground_track_from_liftoff_until_payload_separation:
+          type: string
+        ground_track_of_launch_vehicle_2d_img_file:
+          description: file content is base64 encoded
+          type: string
+        ground_track_of_launch_vehicle_2d_img_file_desc:
+          type: string
+        ground_track_of_launch_vehicle_2d_img_file_path:
+          type: string
+        id:
+          type: integer
+        latitude:
+          format: decimal
+          type: number
+        launch_datetime_backup:
+          format: date-time
+          type: string
+        launch_datetime_primary:
+          format: date-time
+          type: string
+        longitude:
+          format: decimal
+          type: number
+        mission_name:
+          type: string
+        name_of_launch_vehicle:
+          type: string
+        name_of_licensee:
+          type: string
+        number_of_frequencies:
+          type: integer
+        orbital_location:
+          type: string
+        primary_poc_email:
+          type: string
+        primary_poc_name:
+          type: string
+        primary_poc_phone:
+          type: string
+        state:
+          type: string
+        updatedAt:
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+      - user_id
+      type: object
+    RequestFrequencyBase:
+      allOf:
+      - $ref: '#/components/schemas/RequestBase'
+      properties:
+        frequencies:
+          items:
+            $ref: '#/components/schemas/Frequency'
+          type: array
+      required:
+      - frequencies
+    RequestList:
+      allOf:
+      - $ref: '#/components/schemas/RequestBase'
+      properties:
+        ecf_cartesian_vectors_format_file:
+          description: file content is base64 encoded
+          type: string
+        frequencies:
+          description: Array of frequencies (as floats)
+          items:
+            format: float
+            type: number
+          type: array
+        ground_track_of_launch_vehicle_2d_img_file:
+          description: file content is base64 encoded
+          type: string
+    RequestedRevision:
+      properties:
+        createdAt:
+          description: Timestamp the revision was created (ISO 8601 format with time
+            zone)
+          format: date-time
+          type: string
+        id:
+          type: integer
+        requested_changes:
+          items:
+            type: string
+          type: array
+        updatedAt:
+          description: Timestamp the revision was last updated (ISO 8601 format with
+            time zone)
+          format: date-time
+          type: string
+        user_id:
+          type: string
+      required:
+      - request_id
+      - requested_changes
+      - user_id
+      type: object
+
+    Message:
+      type: object
+      required:
+        - inquiry_id
+        - sender_id
+        - content
+        - sentAt
+      properties:
+        id:
+          type: integer
+        inquiry_id:
+          type: integer
+        sender_id:
+          type: integer
+        content:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+          description: Timestamp the revision was created (ISO 8601 format with time zone)
+    MessageResponse:
+      type: object
+      required:
+        - inquiry_id
+        - sender_id
+        - content
+        - sentAt
+      properties:
+        id:
+          type: integer
+        inquiry_id:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+        content:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+          description: Timestamp the revision was created (ISO 8601 format with time zone)
+    Inquiry:
+      type: object
+      required:
+        - request_id
+        - entityA_id
+        - entityB_id
+        - createdAt
+        - messages
+      properties:
+        id:
+          type: integer
+        request_id:
+          type: integer
+        entityA_id:
+          type: integer
+        entityB_id:
+          type: integer
+        closed:
+          type: boolean
+        closedBy_id:
+          type: integer
+        closedAt:
+          type: string
+          format: date-time
+          description: Timestamp the comment was created (ISO 8601 format with time zone)
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp the comment was created (ISO 8601 format with time zone)
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    InquiryResponse:
+      type: object
+      required:
+        - request_id
+        - entityA_id
+        - entityB_id
+        - createdAt
+        - messages
+      properties:
+        id:
+          type: integer
+        request_id:
+          type: integer
+        entityA_id:
+          type: integer
+        entityB_id:
+          type: integer
+        closed:
+          type: boolean
+        closedBy:
+          $ref: '#/components/schemas/User'
+        closedAt:
+          type: string
+          format: date-time
+          description: Timestamp the comment was created (ISO 8601 format with time zone)
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp the comment was created (ISO 8601 format with time zone)
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessageResponse'
+    User:
+      type: object
+      required:
+        - external_id
+        - name
+        - email
+        - entity_id
+        - can_concur
+        - messages
+        - closedInquiries
+      properties:
+        id:
+          type: integer
+        external_id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        entity_id:
+          type: integer
+        can_concur:
+          type: boolean
+          description: Whether the user can submit concurrences
+        entity:
+          $ref: '#/components/schemas/Entity'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        closedInquiries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Inquiry'
+    UserResponse:
+      type: object
+      required:
+        - id
+        - external_id
+        - name
+        - email
+        - entity_id
+        - can_concur
+        - entity
+      properties:
+        id:
+          type: integer
+        external_id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        entity_id:
+          type: integer
+        can_concur:
+          type: boolean
+          description: Whether the user can submit concurrences
+        entity:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            abbreviation:
+              type: string
+            type:
+              $ref: '#/components/schemas/UserType'
+    Entity:
+      type: object
+      required:
+        - abbreviation
+        - name
+        - type
+        - active
+        - inquiriesAsEntityA
+        - inquiriesAsEntityB
+      properties:
+        id:
+          type: integer
+        abbreviation:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/UserType'
+        active:
+          type: boolean
+        users:
+          $ref: '#/components/schemas/User'
+        inquiriesAsEntityA:
+          type: array
+          items:
+            $ref: '#/components/schemas/Inquiry'
+        inquiriesAsEntityB:
+          type: array
+          items:
+            $ref: '#/components/schemas/Inquiry'
+
+    Status:
+      enum:
+      - SUBMITTED
+      - UNDER_NTIA_INITIAL_REVIEW
+      - UNDER_INITIAL_REVISION_PER_NTIA
+      - UNDER_FEDERAL_AGENCIES_REVIEW
+      - UNDER_NTIA_FINAL_REVIEW
+      - UNDER_FINAL_REVISION_PER_NTIA
+      - DENIED
+      - APPROVED
+      - APPROVED_WITH_CONDITIONS
+      type: string
+    UserType:
+      enum:
+      - COMMERCIAL
+      - FEDERAL_AGENCY
+      - NTIA
+      type: string
+    Timeframe:
+      enum:
+      - week
+      - month
+      - quarter
+      type: string
+    RequestsOverTimeData:
+      type: object
+      properties:
+        total_requests:
+          type: integer
+      required:
+      - total_requests
+    RequestCompletionTimeData:
+      type: object
+      properties:
+        total_completed:
+          type: integer
+        avg_days:
+          type: number
+        fastest_days:
+          type: integer
+        slowest_days:
+          type: integer
+      required:
+      - total_completed
+      - avg_days
+      - fastest_days
+      - slowest_days
+    RequestsByCommercialEntityData:
+      type: object
+      properties:
+        entity_id:
+          type: integer
+        entity_name:
+          type: string
+        total_submissions:
+          type: integer
+      required:
+      - entity_id
+      - entity_name
+      - total_submissions
+    RequestsByStatusData:
+      type: object
+      properties:
+        status_group:
+          type: string
+        request_count:
+          type: integer
+      required:
+      - status_group
+      - request_count
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - expires_in
+        - token_type
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        id_token:
+          type: string
+        expires_in:
+          type: number
+        refresh_token_expires_in:
+          type: number
+        token_type:
+          type: string
+          example: Bearer
+        user:
+          $ref: "#/components/schemas/UserObject"
+    UserProfileResponse:
+      type: object
+      required:
+        - email
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        entity:
+          $ref: "#/components/schemas/Entity"
+        can_concur:
+          type: boolean
+        isEntityActive:
+          type: boolean
+        auth_profile:
+          type: object
+          description: Raw provider profile
+        sub:
+          type: string
+        given_name:
+          type: string
+        family_name:
+          type: string
+    LogoutResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+        logout_redirect_url:
+          type: string
+          nullable: true
+    ConfigResponse:
+      type: object
+      required:
+        - authMode
+        - entraConfigured
+        - loginGovConfigured
+      properties:
+        authMode:
+          type: string
+        entraConfigured:
+          type: boolean
+        loginGovConfigured:
+          type: boolean
+        loginGovClientId:
+          type: string
+          nullable: true
+        loginGovRedirectUri:
+            type: string
+            nullable: true
+        loginGovAuthEndpoint:
+            type: string
+            nullable: true
+        loginGovEndSessionEndpoint:
+            type: string
+            nullable: true
+    DebugUserResponse:
+      type: object
+      required:
+        - message
+        - userProfile
+        - instructions
+      properties:
+        message:
+          type: string
+        userProfile:
+          $ref: "#/components/schemas/UserProfileResponse"
+        instructions:
+          type: string
+    UserObject:
+      type: object
+      required:
+        - id
+        - displayName
+        - email
+        - role
+        - tenantId
+        - canConcur
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+        tenantId:
+          type: string
+        federalAgencyId:
+          type: string
+          nullable: true
+        federalAgencyAbbr:
+          type: string
+          nullable: true
+        canConcur:
+          type: boolean
+        isEntityActive:
+          type: boolean
+    CommonConditionCreateDraft:
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+      required:
+      - title
+      - content
+      type: object
+    CommonCondition:
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        status:
+          $ref: '#/components/schemas/CommonConditionWorkflowStatus'
+        createdAt:
+          format: date-time
+          type: string
+        publishedAt:
+          format: date-time
+          nullable: true
+          type: string
+        submittedBy:
+          nullable: true
+          type: string
+        isOwnedByCurrentUser:
+          type: boolean
+        rejectionReason:
+          nullable: true
+          type: string
+      required:
+      - id
+      - title
+      - content
+      - status
+      - createdAt
+      - publishedAt
+      - submittedBy
+      - isOwnedByCurrentUser
+      - rejectionReason
+      type: object
+    CommonConditionOptionsItem:
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        sortOrder:
+          type: integer
+      required:
+      - id
+      - title
+      - content
+      - sortOrder
+      type: object
+    CommonConditionReject:
+      properties:
+        rejectionReason:
+          type: string
+      required:
+      - rejectionReason
+      type: object
+    CommonConditionWorkflowStatus:
+      enum:
+      - DRAFT
+      - SUBMITTED
+      - REJECTED
+      - PUBLISHED
+      type: string
+    PaginatedCommonConditionsResponse:
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalCount:
+          type: integer
+        totalPages:
+          type: integer
+        data:
+          items:
+            $ref: '#/components/schemas/CommonCondition'
+          type: array
+      required:
+      - page
+      - pageSize
+      - totalCount
+      - totalPages
+      - data
+      type: object
+
+  securitySchemes:
+    bearerAuth:
+      bearerFormat: JWT
+      scheme: bearer
+      type: http
+  responses:
+    AccessDenied:
+      description: |
+        Access denied due to entity-based access control restrictions.
+        COMMERCIAL users can only access data related to requests created by their own entity.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "Users can only view data created by their own entity"
+    EntityFilteredResponse:
+      description: |
+        Response filtered based on user's entity type:
+        - COMMERCIAL users see only data from their own entity
+        - NTIA and FEDERAL_AGENCY users see all data
+info:
+  description: |
+    API for managing launch requests and their associated frequencies.
+
+    ## Access Control
+
+    This API implements entity-based access control to ensure data security and proper collaboration:
+
+    ### User Types and Access Levels
+
+    - **COMMERCIAL Users**: Can only view data (requests, actions, approvals, comments, concurrences, denials, requested revisions, and request drafts) related to requests created by users from their own entity/organization. This enables collaboration within the same commercial entity while maintaining data isolation between different organizations.
+
+    - **NTIA Users**: Have full access to view all data across all requests and entities. This allows government oversight and administration of the entire system.
+
+    - **FEDERAL_AGENCY Users**: Have full access to view all data across all requests and entities. This allows federal agencies to maintain oversight across all requests.
+
+    ### Implementation Details
+
+    - Most GET endpoints accept an optional `user_id` query parameter for access control filtering
+    - When `user_id` is provided, the system validates the user's entity type and applies appropriate filtering
+    - COMMERCIAL users will only see data from requests created by their own entity
+    - NTIA and FEDERAL_AGENCY users see all data without restrictions
+    - When `user_id` is not provided, no access control filtering is applied (for backward compatibility)
+
+    ### Unread Message Counts
+
+    The `/requests` endpoint includes entity-based unread message counts when the `user_id` parameter is provided:
+
+    - **Entity-Based Filtering**: Users only see unread message counts for inquiries where their entity is involved as either entityA or entityB
+    - **Commercial Users**: See unread counts only for inquiries involving their commercial entity
+    - **Federal Agency Users**: See unread counts only for inquiries involving their federal agency entity
+    - **NTIA Users**: See unread counts only for inquiries involving NTIA
+    - **Privacy Protection**: Users cannot see unread message counts for inquiries between other entities
+    - **Performance**: Counts are calculated efficiently using database joins with proper entity filtering
+    - **Read Status Tracking**: Messages are automatically marked as read when users access inquiry details, updating the unread counts in real-time
+    - **Zero Count Handling**: The `unreadMessageCount` property is omitted entirely when the count is 0, reducing payload size and preventing display of zero badges
+
+    ### Affected Endpoints
+
+    The following endpoints implement entity-based access control:
+    - `GET /requests` - List requests with entity-based unread message counts
+    - `GET /requests/{id}/actions` - List actions for a request
+    - `GET /requests/{id}/approvals` - List approvals for a request
+    - `GET /requests/{id}/comments` - List comments for a request
+    - `GET /requests/{id}/concurrences` - List concurrences for a request
+    - `GET /requests/{id}/denials` - List denials for a request
+    - `GET /requests/{id}/requested-revisions` - Get requested revisions for a request
+    - `GET /request-drafts` - List request drafts
+    - `GET /request-drafts/{id}` - Get a specific request draft
+
+    ### Authentication Endpoints
+
+    The `/auth` endpoints provide the complete authentication flow for the application:
+
+    - `POST /auth/token` - Exchanges an authorization code for access, refresh, and ID tokens. Used immediately after login redirect from the provider.
+    - `POST /auth/refresh`- Rotates refresh tokens and issues a new access token. Enforces refresh token reuse detection and revocation.
+    - `GET /auth/user`- Retrieves the authenticated user's profile, entity permissions, and provider metadata.
+    - `**`POST /auth/logout`- Revokes the current refresh token and returns an optional logout redirect URL.
+    - `**`GET /auth/config`- Returns authentication configuration for the frontend (mode, enabled providers, redirect URIs).
+    - `POST `/auth/debug-user`- Development-only endpoint used to inspect provider-issued claims using an authorization code.
+    All authentication endpoints support rate-limiting, token validation, and security auditing.
+
+  title: Launch Requests and Frequencies API
+  version: 1.1.0
+openapi: 3.0.3
+paths:
+  /common-conditions/options:
+    get:
+      summary: Get published common condition options
+      description: Retrieve published common conditions for the approval dropdown.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/CommonConditionOptionsItem'
+                type: array
+          description: List of published common condition options
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/published:
+    get:
+      summary: Get paginated published common conditions
+      description: Retrieve the published common conditions for the admin table.
+      parameters:
+      - description: Number of results per page
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 10
+          minimum: 1
+          type: integer
+      - description: Page number to retrieve
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommonConditionsResponse'
+          description: Paginated list of published common conditions
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/submitted:
+    get:
+      summary: Get paginated workflow common conditions
+      description: Retrieve draft, submitted, and rejected common conditions for the admin workflow table.
+      parameters:
+      - description: Number of results per page
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 10
+          minimum: 1
+          type: integer
+      - description: Page number to retrieve
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      - description: Filter workflow common conditions by one or more statuses
+        in: query
+        name: statuses
+        required: false
+        schema:
+          items:
+            $ref: '#/components/schemas/CommonConditionWorkflowStatus'
+          type: array
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCommonConditionsResponse'
+          description: Paginated list of workflow common conditions
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/drafts:
+    post:
+      summary: Create a common condition draft
+      description: Create a new draft common condition owned by the authenticated author.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommonConditionCreateDraft'
+        required: true
+      responses:
+        '201':
+          description: Common condition draft created successfully
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/drafts/{id}:
+    put:
+      summary: Update a draft common condition
+      description: Update title and content for a draft common condition owned by the authenticated author.
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommonConditionCreateDraft'
+        required: true
+      responses:
+        '200':
+          description: Common condition draft updated successfully
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Conflict - invalid workflow state
+        '404':
+          description: Common condition not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+    delete:
+      summary: Delete a common condition
+      description: Delete a common condition when permitted by role and workflow state. Federal users may delete only their own draft conditions, while NTIA may delete only final-stage approved or denied conditions.
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        '204':
+          description: Common condition deleted successfully
+        '400':
+          description: Invalid common condition id
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Conflict - invalid workflow state
+        '404':
+          description: Common condition not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/{id}/submit:
+    post:
+      summary: Submit a common condition draft
+      description: Transition a draft common condition to submitted for review.
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Common condition draft submitted successfully
+        '400':
+          description: Invalid common condition id
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Conflict - invalid workflow state
+        '404':
+          description: Common condition not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/{id}/publish:
+    post:
+      summary: Publish a submitted common condition
+      description: Transition a submitted common condition to published.
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      responses:
+        '200':
+          description: Common condition published successfully
+        '400':
+          description: Invalid common condition id
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Conflict - invalid workflow state
+        '404':
+          description: Common condition not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /common-conditions/{id}/reject:
+    post:
+      summary: Reject a submitted common condition
+      description: Transition a submitted common condition to rejected with a rejection reason.
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommonConditionReject'
+        required: true
+      responses:
+        '200':
+          description: Common condition rejected successfully
+        '400':
+          description: Invalid request payload
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Conflict - invalid workflow state
+        '404':
+          description: Common condition not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - CommonConditions
+  /dashboard/requests-over-time/{timeframe}:
+    get:
+      summary: Get request submission metrics over a time period
+      description: Retrieve metrics showing the number of requests submitted during a specified timeframe
+      parameters:
+      - description: Time period to retrieve data for
+        in: path
+        name: timeframe
+        required: true
+        schema:
+          $ref: '#/components/schemas/Timeframe'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RequestsOverTimeData'
+                type: array
+          description: List of requests submitted metrics
+        '400':
+          description: Invalid timeframe parameter
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - Dashboard
+  /dashboard/request-completion-time/{timeframe}:
+    get:
+      summary: Get request completion time metrics over a time period
+      description: Retrieve metrics showing the average completion time for requests during a specified timeframe
+      parameters:
+      - description: Time period to retrieve data for
+        in: path
+        name: timeframe
+        required: true
+        schema:
+          $ref: '#/components/schemas/Timeframe'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RequestCompletionTimeData'
+                type: array
+          description: List of request completion time metrics
+        '400':
+          description: Invalid timeframe parameter
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - Dashboard
+  /dashboard/requests-by-commercial-entity:
+    get:
+      summary: Get request count by commercial entity
+      description: Retrieve the count of requests submitted by each commercial entity
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RequestsByCommercialEntityData'
+                type: array
+          description: List of request counts by commercial entity
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - Dashboard
+  /dashboard/requests-by-status:
+    get:
+      summary: Get request count by status
+      description: Retrieve the count of requests grouped by their current status
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RequestsByStatusData'
+                type: array
+          description: List of request counts by status
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      tags:
+      - Dashboard
+  /request-drafts:
+    get:
+      parameters:
+      - description: User ID for access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - $ref: '#/components/parameters/UserIdHeader'
+      - $ref: '#/components/parameters/UserNameHeader'
+      - $ref: '#/components/parameters/UserTypeHeader'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RequestDraft'
+                type: array
+          description: List of request drafts (filtered by entity for COMMERCIAL users)
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      summary: Retrieve all request drafts with entity-based access control
+      tags:
+      - RequestDraft
+    post:
+      parameters:
+      - $ref: '#/components/parameters/UserIdHeader'
+      - $ref: '#/components/parameters/UserNameHeader'
+      - $ref: '#/components/parameters/UserTypeHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/RequestDraft'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDraft'
+          description: Request draft created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      summary: Create a new request draft
+      tags:
+      - RequestDraft
+  /request-drafts/{id}:
+    get:
+      parameters:
+      - description: The ID of the request draft to retrieve
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - &id001
+        $ref: '#/components/parameters/UserIdHeader'
+      - &id002
+        $ref: '#/components/parameters/UserNameHeader'
+      - &id003
+        $ref: '#/components/parameters/UserTypeHeader'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDraft'
+          description: Request draft found (access controlled by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request draft not found
+        '500':
+          description: Internal server error
+      security:
+      - bearerAuth: []
+      summary: Retrieve a request draft by ID with entity-based access control
+      tags:
+      - RequestDraft
+  /requests:
+    get:
+      parameters:
+      - description: Number of results per page
+        in: query
+        name: pageSize
+        required: false
+        schema:
+          default: 10
+          minimum: 1
+          type: integer
+      - description: Page number to retrieve
+        in: query
+        name: page
+        required: false
+        schema:
+          default: 1
+          minimum: 1
+          type: integer
+      - description: read boolean flag
+        in: query
+        name: unread
+        required: false
+        schema:
+          default: true
+          type: boolean
+      - description: Filter requests by one or more statuses
+        in: query
+        name: statuses
+        required: false
+        schema:
+          items:
+            $ref: '#/components/schemas/Status'
+          type: array
+      - description: Search for requests by call_sign or comments
+        in: query
+        name: search
+        required: false
+        schema:
+          type: string
+      - description: Field to sort request results by
+        in: query
+        name: sortBy
+        required: false
+        schema:
+          enum:
+          - createdAt
+          - daysToOperation
+          - mission_name
+          - id
+          - launch_datetime_primary
+          - name_of_licensee
+          - primary_poc_email
+          type: string
+      - description: Direction to sort request results
+        in: query
+        name: sortDirection
+        required: false
+        schema:
+          enum:
+          - asc
+          - desc
+          type: string
+      - description: IANA timezone used to resolve relative and date-only filters
+        in: query
+        name: timezone
+        required: false
+        schema:
+          example: America/New_York
+          type: string
+      - description: ISO date-time used as the reference instant for days-to-operation filters
+        in: query
+        name: referenceDate
+        required: false
+        schema:
+          example: '2026-06-10T12:00:00.000Z'
+          type: string
+      - description: JSON-encoded advanced request table filter rules for status, text, date, number, and exact launch serial number request fields
+        in: query
+        name: filterRules
+        required: false
+        schema:
+          type: string
+      - description: User ID for entity-based filtering. When provided, unreadMessageCount will be included for inquiries where the user's entity is involved (Commercial, Federal Agency, or NTIA).
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestsResponse'
+          description: Paginated list of request summaries with entity-based filtering and unread message counts
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - Access denied due to entity restrictions
+      security:
+      - bearerAuth: []
+      summary: Retrieve paginated requests with entity-based filtering and unread message counts
+    post:
+      parameters:
+      - $ref: '#/components/parameters/UserIdHeader'
+      - $ref: '#/components/parameters/UserNameHeader'
+      - $ref: '#/components/parameters/UserTypeHeader'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+        required: true
+      responses:
+        '201':
+          description: Request created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new request
+  /requests/{id}:
+    get:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestDetails'
+          description: Details of the request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve a specific request
+    put:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+        required: true
+      responses:
+        '200':
+          description: Request updated successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Update a specific request
+  /requests/{id}/actions:
+    get:
+      parameters:
+      - description: ID of the request to get actions for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Action'
+                type: array
+          description: List of actions for the given request (filtered by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve all actions for a specific request with entity-based access control
+  /requests/{id}/approvals:
+    get:
+      parameters:
+      - description: ID of the request to get approvals for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Approval'
+                type: array
+          description: List of approvals for the given request (filtered by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve all approvals for a specific request with entity-based access control
+    post:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Approval'
+        required: true
+      responses:
+        '201':
+          description: Approval created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new approval for a specific request
+  /requests/{id}/comments:
+    get:
+      parameters:
+      - description: ID of the request to get comments for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Comment'
+                type: array
+          description: List of comments for the given request (filtered by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve all comments for a specific request with entity-based access control
+    post:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      responses:
+        '201':
+          description: Comment created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new comment for a specific request
+  /requests/{id}/concurrences:
+    get:
+      parameters:
+      - description: ID of the request to get concurrences for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Concurrence'
+                type: array
+          description: List of concurrences for the given request (filtered by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve all concurrences for a specific request with entity-based access control
+    post:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Concurrence'
+        required: true
+      responses:
+        '201':
+          description: Concurrence created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new concurrence for a specific request
+  /requests/{id}/denials:
+    get:
+      parameters:
+      - description: ID of the request to get denials for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/Denial'
+                type: array
+          description: List of denials for the given request (filtered by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve all denials for a specific request with entity-based access control
+    post:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Denial'
+        required: true
+      responses:
+        '201':
+          description: Denial created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new denial for a specific request
+  /requests/{id}/requested-revisions:
+    get:
+      parameters:
+      - description: ID of the request to get requested revision for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: User ID for entity-based access control filtering
+        in: query
+        name: user_id
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/RequestedRevision'
+                type: array
+          description: Latest requested changes per the revision (filtered by entity for COMMERCIAL users when user_id is provided)
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve the latest requested revisions for a given request_id with entity-based access control
+    post:
+      parameters:
+      - description: ID of the request to create a requested revision for
+        in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                requested_changes:
+                  items:
+                    type: string
+                  type: array
+                user_id:
+                  type: string
+              required:
+              - requested_changes
+              - user_id
+              type: object
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestedRevision'
+          description: Requested revision created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new requested revision for a specific request
+  /requests/{id}/revisions:
+    post:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - description: Action parameter
+        in: query
+        name: action
+        required: false
+        schema:
+          type: string
+      - *id001
+      - *id002
+      - *id003
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+          description: Revision created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+      security:
+      - bearerAuth: []
+      summary: Create a new revision for a specific request
+  /requests/{id}/revisions/{revisionId}:
+    get:
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: integer
+      - in: path
+        name: revisionId
+        required: true
+        schema:
+          type: integer
+      - *id001
+      - *id002
+      - *id003
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+          description: Request revision
+        '401':
+          description: Unauthorized
+        '404':
+          description: Request not found
+      security:
+      - bearerAuth: []
+      summary: Retrieve all request revision for a specific request and revision id
+
+  /requests/{id}/inquiries:
+    get:
+      summary: Retrieve all inquiries for request
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of inquiries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inquiry'
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a new Inquiry
+      security:
+        - bearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/UserIdHeader'
+      - $ref: '#/components/parameters/UserNameHeader'
+      - $ref: '#/components/parameters/UserTypeHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inquiry'
+      responses:
+        '201':
+          description: inquiry created successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+  /requests/{id}/inquiries/{inquiryId}:
+    get:
+      summary: Retrieve a specific inquiry
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: inquiryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: inquiry details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inquiry'
+        '404':
+          description: inquiry not found
+        '401':
+          description: Unauthorized
+  /requests/{id}/inquiries/{inquiryId}/messages:
+    post:
+      summary: Create a new message
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: inquiryId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/UserIdHeader'
+        - $ref: '#/components/parameters/UserNameHeader'
+        - $ref: '#/components/parameters/UserTypeHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+      responses:
+        '201':
+          description: message created successfully
+        '400':
+          description: inquiry not found
+        '401':
+          description: Unauthorized
+
+  /users/{externalId}:
+    get:
+      summary: Get user by external ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: externalId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The external ID of the user
+      responses:
+        '200':
+          description: User data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: External ID is required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+      tags:
+        - Users
+
+  /users/email/{email}:
+    get:
+      summary: Get user by email
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+          description: The email address of the user
+      responses:
+        '200':
+          description: User data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Email is required
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+      tags:
+        - Users
+
+  /auth/token:
+    post:
+      summary: Exchange authorization code for tokens
+      description: >
+        Exchanges an authorization code for access, refresh, and ID tokens.
+        In login-gov mode, a code_verifier is required for PKCE.
+        Protected by rate-limiting middleware.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                code_verifier:
+                  type: string
+                  description: Required for PKCE in login-gov mode
+              required:
+                - code
+      responses:
+        "200":
+          description: Token exchange response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: Missing code or code_verifier
+        "403":
+          description: User not found in system
+        "500":
+          description: Failed to exchange authorization code
+  /auth/refresh:
+    post:
+      summary: Refresh JWT token
+      description: >
+        Rotates refresh tokens and issues a new access token. Protected by rate-limiter.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: New JWT and refresh token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "401":
+          description: Missing or invalid refresh token
+        "404":
+          description: User not found
+        "500":
+          description: Failed to refresh token
+  /auth/user:
+    get:
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfileResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: User not found in system
+        "500":
+          description: Failed to retrieve user
+  /auth/logout:
+    post:
+      summary: Logout user and revoke refresh token
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+        "400":
+          description: Refresh token missing
+        "500":
+          description: Failed to logout
+  /auth/config:
+    get:
+      summary: Get authentication configuration
+      responses:
+        "200":
+          description: Auth config for frontend
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigResponse"
+  /auth/debug-user:
+    post:
+      summary: Debug user via authorization code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+              required:
+                - code
+      responses:
+        "200":
+          description: Debug profile info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DebugUserResponse"
+        "400":
+          description: Missing authorization code
+        "500":
+          description: Failed to retrieve debug user
+
+servers:
+- description: Production server
+  url: https://app-e-osmspp-prod-spaceportal-custom-prod.azurewebsites.net

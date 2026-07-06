@@ -1,0 +1,1 @@
+- Transmissions using a center frequency of 2090 MHz to support booster recovery operations should be limited to an ERP less than or equal to 3 Watts to the maximum extent possible but may be authorized to use an ERP less than or equal to 5400 Watts contingent upon successful coordination with federal agencies.

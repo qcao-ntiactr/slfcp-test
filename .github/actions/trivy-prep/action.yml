@@ -1,0 +1,35 @@
+name: 'Trivy Preparation'
+description: 'Sets up Trivy for vulnerability scanning'
+inputs:
+  working-directory:
+    description: 'Sets up Trivy working directory'
+    required: false
+    default: '.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install Trivy (pinned)
+      uses: aquasecurity/setup-trivy@v0.2.6
+      with:
+        version: v0.70.0
+
+    - name: Verify Trivy installation
+      shell: bash
+      run: trivy --version
+
+    - name: Configure Trivy cache
+      shell: bash
+      run: |
+        mkdir -p $HOME/.cache/trivy
+        echo "TRIVY_CACHE_DIR=$HOME/.cache/trivy" >> $GITHUB_ENV
+
+    - name: Cache Trivy vulnerability DB
+      uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cache/trivy/db
+          ~/.cache/trivy/java-db
+          ~/.cache/trivy/checks
+        key: trivy-db-${{ runner.os }}
+        restore-keys: |
+          trivy-db-

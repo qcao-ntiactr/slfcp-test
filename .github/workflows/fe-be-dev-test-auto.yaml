@@ -1,0 +1,467 @@
+name: Deploy FE and BE | DEV or TEST
+
+on:
+  push:
+    branches:
+      - dev
+      - story/*
+      - fix/*
+      - devops/*
+
+permissions:
+  id-token: write
+  contents: read
+  security-events: write # <-- Needed to upload Trivy/SARIF to Code scanning
+  actions: read # <-- Needed to read telementry data for actions used in the workflow
+
+jobs:
+  fetch-secrets:
+    runs-on: [self-hosted, slfcp, dev]
+    environment: ${{
+      github.ref == 'refs/heads/dev' && 'test' ||
+      (startsWith(github.ref, 'refs/heads/devops/') ||
+      startsWith(github.ref, 'refs/heads/story/') ||
+      startsWith(github.ref, 'refs/heads/fix/')) && 'dev' }}
+    outputs:
+      secrets-json: ${{ steps.export-secrets.outputs.secrets-json }}
+    env:
+      SECRETS_LIST: |
+        IMG-TAG
+        RES-GRP
+        SWA-NAME
+        SWA-TOKEN
+        ACR-HOST
+        ACR-USERNAME
+        ACR-USRPWD
+        ACR-REPO
+        APP-NAME
+        APP-SLOT
+        DBHOST
+        DBPORT
+        DBNAME
+        DBUSER
+        DBUSERPWD
+        URI-ENCODED-DBUSERPWD
+        ENTRY-MIGR-LABEL
+
+    steps:
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZ_OIDC_CLIENTID }}
+          tenant-id: ${{ vars.AZ_TENANTID }}
+          subscription-id: ${{ vars.AZ_SUBID }}
+
+      - name: Fetch secrets from Azure Key Vault
+        id: export-secrets
+        shell: bash
+        run: |
+          echo "Fetching secrets from Key Vault: ${{ vars.KEYVAULT_NAME }}"
+          json="{"
+          # Fetch values for each secret and set them as environment variables
+          for secret_name in $SECRETS_LIST; do
+            value=$(az keyvault secret show --vault-name "${{ vars.KEYVAULT_NAME }}" \
+                      --name "$secret_name" --query "value" -o tsv)
+
+            if [ -z "$value" ]; then
+              echo "ERROR: Secret '$secret_name' not found or has no value."
+              exit 1
+            fi
+
+            # Normalize secret name for environment variables
+            safe_name=$(echo "$secret_name" | tr '-' '_' | tr '[:lower:]' '[:upper:]')
+
+            # Mask the secret value in GitHub logs
+            echo "::add-mask::$value"
+
+            echo "$safe_name=$value" >> "$GITHUB_ENV"
+
+            # Add to JSON blob for cross-job usage
+            json+="\"${safe_name}\":\"${value}\","
+          done
+          json="${json%,}}"
+
+          echo "secrets-json=$json" >> "$GITHUB_OUTPUT"
+          echo "$json" > secrets.json
+
+      - name: Upload secrets artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: secrets
+          path: secrets.json
+
+  deploy-frontend:
+    needs: fetch-secrets
+    runs-on: [self-hosted, slfcp, dev]
+    environment: ${{
+      github.ref == 'refs/heads/dev' && 'test' ||
+      (startsWith(github.ref, 'refs/heads/devops/') ||
+      startsWith(github.ref, 'refs/heads/story/') ||
+      startsWith(github.ref, 'refs/heads/fix/')) && 'dev' }}
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      VITE_API_URL: ${{ vars.VITE_API_URL }}
+      VITE_ENTRA_TENANT_ID: ${{ vars.AZ_TENANTID }}
+      VITE_ENTRA_CLIENT_ID: ${{ vars.AZ_ENTRA_CLIENTID }}
+      VITE_ENTRA_REDIRECT_URI: ${{ vars.AZ_ENTRA_REDIRECT_URI }}
+      VITE_TOKEN_REFRESH_INTERVAL: ${{ vars.VITE_TOKEN_REFRESH_INTERVAL }}
+      VITE_TOKEN_REFRESH_THRESHOLD: ${{ vars.VITE_TOKEN_REFRESH_THRESHOLD }}
+      VITE_ACCESS_TOKEN_EXPIRES_IN: ${{ vars.VITE_ACCESS_TOKEN_EXPIRES_IN }}
+      VITE_REFRESH_TOKEN_EXPIRES_IN: ${{ vars.VITE_REFRESH_TOKEN_EXPIRES_IN }}
+      VITE_UNDER_MAINTENANCE: ${{ vars.VITE_UNDER_MAINTENANCE }}
+      VITE_INACTIVITY_TIMEOUT: ${{ vars.VITE_INACTIVITY_TIMEOUT }}
+      VITE_SESSION_WARNING_TIME: ${{ vars.VITE_SESSION_WARNING_TIME }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Reset git state
+        run: git reset --hard
+
+      - name: Clean workspace
+        run: git clean -fdx
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24 # proactively switch to Node 24
+          cache: 'pnpm'
+
+      # Verify pnpm is installed
+      - name: Check pnpm
+        run: |
+          pnpm --version
+          node --version
+
+      - name: Load secrets into environment
+        uses: ./.github/actions/load-secrets
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Node CI steps
+        uses: ./.github/actions/node-ci
+        with:
+          working-directory: .
+
+      - name: Build the React app
+        run: pnpm -r --filter @slfcp/frontend... build
+
+      # ---- Trivy frontend fs scan: repo deps + misconfig + secrets ----
+      - name: Run Trivy Prep
+        if: always()
+        uses: ./.github/actions/trivy-prep
+        with:
+          working-directory: .
+
+      - name: Trivy fs scan (frontend) - fail on HIGH/CRITICAL
+        if: always()
+        id: trivy_frontend_fs
+        continue-on-error: true
+        run: |
+          trivy fs . \
+            --cache-dir ~/.cache/trivy \
+            --scanners vuln,misconfig,secret \
+            --skip-dirs node_modules \
+            --skip-dirs pnpm \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --ignorefile .trivyignore.yaml \
+            --exit-code 1 \
+            --format sarif \
+            --output trivy-frontend-fs.sarif
+
+      - name: Trivy fs scan (frontend) table
+        if: always()
+        continue-on-error: true
+        run: |
+          trivy fs . \
+            --cache-dir ~/.cache/trivy \
+            --scanners vuln,misconfig,secret \
+            --skip-dirs node_modules \
+            --skip-dirs pnpm \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --ignorefile .trivyignore.yaml \
+            --exit-code 1 \
+            --format table
+
+      - name: Upload Trivy SARIF (frontend)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-frontend-fs.sarif
+          category: 'Trivy - Frontend FS Scan'
+
+      - name: Fail if Trivy found HIGH/CRITICAL
+        if: steps.trivy_frontend_fs.outcome == 'failure'
+        continue-on-error: true
+        run: |
+          echo "Trivy found HIGH or CRITICAL vulnerabilities in Azure SWA frontend file system"
+          exit 1
+      # ---- End Trivy frontend fs scan ----
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZ_OIDC_CLIENTID }}
+          tenant-id: ${{ vars.AZ_TENANTID }}
+          subscription-id: ${{ vars.AZ_SUBID }}
+
+      - name: Deploy to Azure Static Web Apps
+        run: |
+          export SWA_CLI_DEPLOYMENT_TOKEN="$SWA_TOKEN"
+          pnpm dlx @azure/static-web-apps-cli@2.0.9 deploy apps/frontend/dist \
+            --env production
+
+  deploy-backend:
+    needs: fetch-secrets
+    runs-on: [self-hosted, slfcp, dev]
+    environment: ${{
+      github.ref == 'refs/heads/dev' && 'test' ||
+      (startsWith(github.ref, 'refs/heads/devops/') ||
+      startsWith(github.ref, 'refs/heads/story/') ||
+      startsWith(github.ref, 'refs/heads/fix/')) && 'dev' }}
+    concurrency:
+      group: backend-deploy-${{ github.ref == 'refs/heads/dev' && 'test' || 'dev' }}
+      cancel-in-progress: false
+
+    env:
+      # Prisma environment variables to prevent engine download issues
+      PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING: '1'
+      PRISMA_CLI_QUERY_ENGINE_TYPE: 'library'
+      PRISMA_SKIP_POSTINSTALL_GENERATE: 'true'
+      PRISMA_GENERATE_SKIP_AUTOINSTALL: 'true'
+
+    steps:
+      - name: Free runner disk space
+        run: |
+          echo "Disk before cleanup:"
+          df -h
+
+          if [ -n "${RUNNER_TEMP:-}" ] && [ -d "$RUNNER_TEMP" ]; then
+            find "$RUNNER_TEMP" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          fi
+
+          diag_dir="$HOME/actions-runner/_diag"
+          if [ -d "$diag_dir" ]; then
+            find "$diag_dir" -type f -name "*.log" -mtime +3 -delete
+          fi
+
+          if command -v pnpm >/dev/null 2>&1; then
+            pnpm store prune || true
+          fi
+
+          echo "Disk after cleanup:"
+          df -h
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Reset git state
+        run: git reset --hard
+
+      - name: Clean workspace
+        run: git clean -fdx
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24 # proactively switch to Node 24
+
+      - name: Load secrets into environment
+        uses: ./.github/actions/load-secrets
+
+      - name: Verify pnpm
+        run: |
+          pnpm --version
+          node --version
+
+      - name: Resolve image tags
+        id: image
+        run: |
+          image_sha="$(git rev-parse HEAD)"
+          image_uri="$ACR_HOST/$ACR_REPO:$image_sha"
+          image_alias="$ACR_HOST/$ACR_REPO:$IMG_TAG"
+
+          echo "sha=$image_sha" >> "$GITHUB_OUTPUT"
+          echo "uri=$image_uri" >> "$GITHUB_OUTPUT"
+          echo "alias=$image_alias" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_SHA=$image_sha" >> "$GITHUB_ENV"
+          echo "IMAGE_URI=$image_uri" >> "$GITHUB_ENV"
+          echo "IMAGE_ALIAS=$image_alias" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run Node CI steps
+        uses: ./.github/actions/node-ci
+        with:
+          working-directory: .
+
+      - name: Generate Prisma Client
+        run: pnpm --prefix ./apps/backend prisma:generate
+
+      - name: Build the backend and packages
+        run: pnpm --filter '@slfcp/backend...' build
+
+      # ---- Trivy backend fs scan: repo deps + misconfig + secrets ----
+      - name: Run Trivy Prep
+        if: always()
+        uses: ./.github/actions/trivy-prep
+        with:
+          working-directory: .
+
+      - name: Trivy fs scan (backend) - fail on HIGH/CRITICAL
+        if: always()
+        id: trivy_backend_fs
+        continue-on-error: true
+        run: |
+          trivy fs . \
+            --cache-dir ~/.cache/trivy \
+            --scanners vuln,misconfig,secret \
+            --skip-dirs node_modules \
+            --skip-dirs pnpm \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --ignorefile .trivyignore.yaml \
+            --exit-code 1 \
+            --format sarif \
+            --output trivy-backend-fs.sarif
+
+      - name: Trivy fs scan (backend) table
+        if: always()
+        continue-on-error: true
+        run: |
+          trivy fs . \
+            --cache-dir ~/.cache/trivy \
+            --scanners vuln,misconfig,secret \
+            --skip-dirs node_modules \
+            --skip-dirs pnpm \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --ignorefile .trivyignore.yaml \
+            --exit-code 1 \
+            --format table
+
+      - name: Upload Trivy fs SARIF (backend)
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend-fs.sarif
+          category: 'Trivy - Backend FS Scan'
+
+      - name: Fail if Trivy found HIGH/CRITICAL
+        if: steps.trivy_backend_fs.outcome == 'failure'
+        continue-on-error: true
+        run: |
+          echo "Trivy found HIGH or CRITICAL vulnerabilities in Azure WA backend file system"
+          exit 1
+      # ---- End Trivy backend fs scan ----
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZ_CREDENTIALS }}
+
+      - name: Build and push the Docker image in Azure Container Registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATABASE_URL="postgres://${DBUSER}:${URI_ENCODED_DBUSERPWD}@${DBHOST}:${DBPORT}/${DBNAME}?sslmode=require&schema=public&connection_limit=10&pool_timeout=20"
+          ACR_DATABASE_URL="${DATABASE_URL//&/\\&}"
+          echo "::add-mask::$ACR_DATABASE_URL"
+
+          acr_name="${ACR_HOST%%.*}"
+          source_context="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git#${IMAGE_SHA}"
+          az acr build \
+            --registry "$acr_name" \
+            --file apps/backend/Dockerfile \
+            --image "$ACR_REPO:$IMAGE_SHA" \
+            --image "$ACR_REPO:$IMG_TAG" \
+            --secret-build-arg DATABASE_URL="${ACR_DATABASE_URL}" \
+            --build-arg ENTRY_MIGR_LABEL="${ENTRY_MIGR_LABEL}" \
+            "$source_context"
+
+      # ---- Trivy image scan of the remotely built custom image ----
+      - name: Trivy scan (image) - fail on HIGH/CRITICAL
+        if: always()
+        id: trivy_backend_image
+        continue-on-error: true
+        run: |
+          export TRIVY_USERNAME="$ACR_USERNAME"
+          export TRIVY_PASSWORD="$ACR_USRPWD"
+          trivy image \
+            --cache-dir ~/.cache/trivy \
+            --pkg-types os,library \
+            --skip-dirs node_modules \
+            --skip-dirs pnpm \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --ignorefile .trivyignore.yaml \
+            --exit-code 1 \
+            --format sarif \
+            --output trivy-backend-image.sarif \
+            "$IMAGE_URI"
+
+      - name: Trivy scan (image) table
+        if: always()
+        continue-on-error: true
+        run: |
+          export TRIVY_USERNAME="$ACR_USERNAME"
+          export TRIVY_PASSWORD="$ACR_USRPWD"
+          trivy image \
+            --cache-dir ~/.cache/trivy \
+            --pkg-types os,library \
+            --skip-dirs node_modules \
+            --skip-dirs pnpm \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --ignorefile .trivyignore.yaml \
+            --exit-code 1 \
+            --format table \
+            "$IMAGE_URI"
+
+      - name: Upload Trivy SARIF (backend)
+        if: always() && hashFiles('trivy-backend-image.sarif') != ''
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-backend-image.sarif
+          category: 'Trivy - Backend Image Scan'
+
+      - name: Fail if Trivy found HIGH/CRITICAL
+        if: steps.trivy_backend_image.outcome == 'failure'
+        continue-on-error: true
+        run: |
+          echo "Trivy found HIGH or CRITICAL vulnerabilities in Azure WA backend custom container"
+          exit 1
+      # ---- End Trivy image scan ----
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.APP_NAME }}
+          slot-name: ${{ env.APP_SLOT }}
+          images: ${{ steps.image.outputs.uri }}
+
+      - name: Restart Azure Web App
+        run: az webapp restart --resource-group $RES_GRP --name $APP_NAME --slot $APP_SLOT
+
+      - name: Clean backend deploy artifacts
+        if: always()
+        run: |
+          rm -f secrets.json trivy-backend-fs.sarif trivy-backend-image.sarif
+
+          df -h

@@ -1,0 +1,2 @@
+- ==[Commercial Provider Name]== should be aware that other stations may be licensed on and nearby these frequencies and, if any interference occurs, they are subject to immediate termination.
+- The STOP BUZZER POC information, for launch operations shall be provided to NTIA ([ravery@ntia.doc.gov](mailto:ravery@ntia.doc.gov)). This phone shall be manned 24/7.

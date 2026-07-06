@@ -1,0 +1,26 @@
+{
+  "name": "@slfcp/logger",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "nodemon",
+    "build": "tsc",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "applicationinsights": "^2.9.6",
+    "winston": "^3.9.0",
+    "winston-azure-application-insights": "^4.0.0",
+    "winston-daily-rotate-file": "^4.7.1",
+    "winston-transport": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/logform": "^1.10.1",
+    "eslint": "^9.39.4",
+    "logform": "^2.7.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.2.0"
+  }
+}

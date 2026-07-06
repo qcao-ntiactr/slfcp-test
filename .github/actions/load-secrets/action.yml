@@ -1,0 +1,19 @@
+name: Load Secrets
+description: Download and load secrets.json artifact into env
+runs:
+  using: composite
+  steps:
+    - name: Download secrets artifact
+      uses: actions/download-artifact@v7
+      with:
+        name: secrets
+        path: .
+
+    - name: Load secrets into environment
+      run: |
+        for key in $(jq -r 'keys[]' secrets.json); do
+          value=$(jq -r --arg k "$key" '.[$k]' secrets.json)
+          echo "::add-mask::$value"
+          echo "$key=$value" >> $GITHUB_ENV
+        done
+      shell: bash

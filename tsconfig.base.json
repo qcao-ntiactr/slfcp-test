@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "module": "ESNext",              // Use ESM modules
+    "baseUrl": ".",
+    "target": "ESNext",              // Target modern JavaScript
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",      // Resolve modules like Node.js
+    "esModuleInterop": true,         // Enable interop with CommonJS
+    "skipLibCheck": true,            // Skip type checking for declaration files
+    "strict": true,                  // Enable strict type checking options
+    "outDir": "./dist",              // Output directory for compiled files
+    "resolveJsonModule": true,       // Allow importing JSON files
+    "isolatedModules": true,          // Isolate modules for better compatibility with ESM
+  }
+}
+  

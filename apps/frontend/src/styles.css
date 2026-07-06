@@ -1,0 +1,85 @@
+/* Request Form */
+
+.field-container {
+  margin-bottom: 25px;
+}
+
+.field-row {
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+.tab-header {
+  text-align: left;
+}
+
+.tab-container {
+  padding: 15px 15px 0px 15px;
+}
+
+.field-label {
+  font-weight: bold !important;
+  margin-bottom: 0 !important;
+}
+
+.field-error {
+  min-height: 1em;
+  margin-top: 0 !important;
+}
+
+.forward-submit-btn {
+  background-color: #4a5568 !important;
+  color: white !important;
+}
+
+.read-only-input {
+  background-color: #edf2f7 !important;
+  color: #626d7f;
+}
+
+.input {
+  background-color: white !important;
+}
+
+.addon-label {
+  background-color: white !important;
+}
+
+.addon-button {
+  cursor: pointer;
+  font-weight: 500;
+  border: solid black 1px !important;
+  background-color: #90cdf4 !important;
+  box-shadow: 2px 2px #a3a4a4;
+  border-radius: 5px !important;
+}
+
+.read-only-addon-button {
+  border: solid rgb(163, 163, 163) 1px !important;
+  border-radius: 5px !important;
+  cursor: not-allowed;
+}
+
+/* View Requests */
+
+.filter-button {
+  border-radius: 50px !important;
+  font-size: 11px !important;
+  min-width: 100px;
+}
+
+.green-dot {
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  background-color: #00bfb3;
+}
+
+.red-dot {
+  height: 10px;
+  width: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  background-color: #bd271e;
+}

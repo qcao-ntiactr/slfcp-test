@@ -1,0 +1,22 @@
+{
+  "name": "user-experience-automation-scripts",
+  "version": "1.0.0",
+  "description": "User experience automation scripts",
+  "scripts": {
+    "menu": "node run-playwright-scripts.mjs",
+    "install:browsers": "npx playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": ">=1.55.1",
+    "dotenv": "^16.5.0",
+    "inquirer": "12.6.3",
+    "tmp": "^0.2.7",
+    "playwright": ">=1.55.1"
+  },
+  "dependencies": {
+    "tmp": "^0.2.7"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

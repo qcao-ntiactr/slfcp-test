@@ -1,0 +1,10 @@
+CREATE INDEX "Request_current_revision_createdAt_id_idx" ON "Request"("current_revision", "createdAt", "id");
+CREATE INDEX "Request_current_revision_status_id_idx" ON "Request"("current_revision", "status", "id");
+CREATE INDEX "Request_current_revision_launch_datetime_primary_id_idx" ON "Request"("current_revision", "launch_datetime_primary", "id");
+CREATE INDEX "Request_current_revision_read_createdAt_id_idx" ON "Request"("current_revision", "read", "createdAt", "id");
+CREATE INDEX "Request_user_id_current_revision_createdAt_id_idx" ON "Request"("user_id", "current_revision", "createdAt", "id");
+CREATE INDEX "Request_root_request_id_idx" ON "Request"("root_request_id");
+CREATE INDEX "Request_current_revision_mission_name_id_idx" ON "Request"("current_revision", "mission_name", "id");
+CREATE INDEX "Request_current_revision_name_of_licensee_id_idx" ON "Request"("current_revision", "name_of_licensee", "id");
+CREATE INDEX "Request_current_revision_primary_poc_email_id_idx" ON "Request"("current_revision", "primary_poc_email", "id");
+CREATE INDEX "User_entity_id_id_idx" ON "User"("entity_id", "id");

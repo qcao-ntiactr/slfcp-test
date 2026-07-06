@@ -1,0 +1,39 @@
+name: Node CI Steps
+description: Install dependencies, run prettier, lint, tests
+inputs:
+  working-directory:
+    required: true
+    default: '.'
+runs:
+  using: composite
+  steps:
+    - name: Install PNPM
+      uses: pnpm/action-setup@v6
+      with:
+        version: 10.28.2
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v5
+      with:
+        node-version: 24
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      run: pnpm install --no-frozen-lockfile
+      working-directory: ${{ inputs.working-directory }}
+      shell: bash
+
+    - name: Run Prettier
+      run: pnpm format:check
+      working-directory: ${{ inputs.working-directory }}
+      shell: bash
+
+    - name: Run Linter
+      run: pnpm lint
+      working-directory: ${{ inputs.working-directory }}
+      shell: bash
+
+    - name: Run Unit Tests
+      run: pnpm test:unit
+      working-directory: ${{ inputs.working-directory }}
+      shell: bash

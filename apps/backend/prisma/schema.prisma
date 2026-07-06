@@ -1,0 +1,455 @@
+generator client {
+  provider      = "prisma-client-js"
+  engineType    = "library"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Request {
+  id                                                 Int        @id @default(autoincrement())
+  fcc_filing_date                                    DateTime?  @default(now()) @db.Timestamptz
+  mission_name                                       String     @db.VarChar(50)
+  name_of_licensee                                   String     @db.VarChar(50)
+  call_sign                                          String     @db.VarChar(8)
+  name_of_launch_vehicle                             String     @db.VarChar(50)
+  city                                               String     @db.VarChar(25)
+  state                                              String     @db.Char(2)
+  latitude                                           Decimal    @db.Decimal(7, 4)
+  longitude                                          Decimal    @db.Decimal(7, 4)
+  launch_datetime_primary                            DateTime   @db.Timestamptz
+  launch_datetime_backup                             DateTime   @db.Timestamptz
+  orbital_location                                   String?
+  number_of_frequencies                              Int        @db.SmallInt
+  ground_track_from_liftoff_until_payload_separation String
+  ecf_cartesian_vectors_format_file_desc             String
+  ecf_cartesian_vectors_format_file_path             String
+  ground_track_of_launch_vehicle_2d_img_file_desc    String
+  ground_track_of_launch_vehicle_2d_img_file_path    String
+  primary_poc_name                                   String     @db.VarChar(50)
+  primary_poc_email                                  String     @db.VarChar(50)
+  primary_poc_phone                                  String     @db.VarChar(12)
+  alternate_poc_name                                 String     @db.VarChar(50)
+  alternate_poc_email                                String     @db.VarChar(50)
+  alternate_poc_phone                                String     @db.VarChar(12)
+  status                                             StatusEnum
+  read                                               Boolean    @default(false)
+  createdAt                                          DateTime   @default(now()) @db.Timestamptz
+  updatedAt                                          DateTime   @updatedAt @db.Timestamptz
+  current_revision                                   Boolean    @default(true)
+  revision                                           Int        @default(0)
+  root_request_id                                    Int?
+  user_id                                            Int?
+
+  user               User?               @relation(name: "UserRequests", fields: [user_id], references: [id])
+  frequencies        Frequency[]         @relation("FrequencyRequest")
+  approvals          Approval[]          @relation("ApprovalRequest")
+  denials            Denial[]            @relation("DenialRequest")
+  concurrences       Concurrence[]       @relation("ConcurrenceRequest")
+  comments           Comment[]           @relation("CommentRequest")
+  actions            Action[]            @relation("ActionRequest")
+  requestedRevisions RequestedRevision[] @relation("RequestedRevisionRequest")
+  inquiries          Inquiry[]           @relation("InquiryRequest")
+
+  @@index([current_revision, createdAt, id], map: "Request_current_revision_createdAt_id_idx")
+  @@index([current_revision, status, id], map: "Request_current_revision_status_id_idx")
+  @@index([current_revision, launch_datetime_primary, id], map: "Request_current_revision_launch_datetime_primary_id_idx")
+  @@index([current_revision, read, createdAt, id], map: "Request_current_revision_read_createdAt_id_idx")
+  @@index([user_id, current_revision, createdAt, id], map: "Request_user_id_current_revision_createdAt_id_idx")
+  @@index([root_request_id], map: "Request_root_request_id_idx")
+  @@index([current_revision, mission_name, id], map: "Request_current_revision_mission_name_id_idx")
+  @@index([current_revision, name_of_licensee, id], map: "Request_current_revision_name_of_licensee_id_idx")
+  @@index([current_revision, primary_poc_email, id], map: "Request_current_revision_primary_poc_email_id_idx")
+}
+
+model Frequency {
+  id                                             Int                    @id @default(autoincrement())
+  request_id                                     Int
+  frequency                                      Decimal                @db.Decimal(8, 4)
+  location_of_transmitter_on_vehicle_or_platform LocationEnum
+  eirp                                           Decimal                @db.Decimal(5, 2)
+  eirp_unit                                      EirpUnit
+  transmitted_bandwidth                          Decimal                @db.Decimal(4, 2)
+  transmitted_bandwidth_is_signal_filtered       SignalFilterStatus
+  transmitted_bandwidth_justification            String
+  minus_3db_bandwidth                            Decimal                @db.Decimal(4, 2)
+  minus_3db_bandwidth_before_or_after_filtering  BeforeOrAfterFiltering
+  minus_20db_bandwidth                           Decimal                @db.Decimal(4, 2)
+  minus_20db_bandwidth_before_or_after_filtering BeforeOrAfterFiltering
+  minus_60db_bandwidth                           Decimal                @db.Decimal(4, 2)
+  minus_60db_bandwidth_before_or_after_filtering BeforeOrAfterFiltering
+  nature_of_modulating_signals                   String                 @db.VarChar(50)
+  emission_designator                            String                 @db.VarChar(50)
+  tx_transmission_start                          DateTime               @db.Timestamptz
+  tx_transmission_end                            DateTime               @db.Timestamptz
+  tx_antenna_type                                String                 @db.VarChar(100)
+  tx_antenna_gain                                Int                    @db.SmallInt
+  tx_antenna_beamwidth                           Int                    @db.SmallInt
+  tx_antenna_altitude                            Int
+  tx_antenna_altitude_unit                       AltitudeUnit
+  receivers                                      Json
+  createdAt                                      DateTime               @default(now()) @db.Timestamptz
+  updatedAt                                      DateTime               @updatedAt @db.Timestamptz
+
+  request Request @relation("FrequencyRequest", fields: [request_id], references: [id])
+}
+
+model AllowedFrequencyRange {
+  id   Int   @id @default(autoincrement())
+  low  Float @map("low")
+  high Float @map("high")
+
+  @@unique([low, high])
+}
+
+enum LocationEnum {
+  first_stage
+  second_stage
+  ground
+}
+
+enum EirpUnit {
+  Watts
+  dBW
+  milliWatts
+  dBm
+}
+
+enum SignalFilterStatus {
+  filtered
+  not_filtered
+}
+
+enum BeforeOrAfterFiltering {
+  before_filtering
+  after_filtering
+}
+
+enum AltitudeUnit {
+  ft
+  m
+  km
+}
+
+enum StatusEnum {
+  SUBMITTED
+  UNDER_NTIA_INITIAL_REVIEW
+  UNDER_INITIAL_REVISION_PER_NTIA
+  UNDER_FEDERAL_AGENCIES_REVIEW
+  UNDER_NTIA_FINAL_REVIEW
+  UNDER_FINAL_REVISION_PER_NTIA
+  DENIED
+  APPROVED
+  APPROVED_WITH_CONDITIONS
+}
+
+model Approval {
+  id            Int      @id @default(autoincrement())
+  request_id    Int
+  user_id       Int?
+  date_approved DateTime @db.Timestamptz
+  condition     String
+  read          Boolean  @default(false)
+  is_final      Boolean  @default(false)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+
+  request Request @relation("ApprovalRequest", fields: [request_id], references: [id])
+  user    User?   @relation(name: "UserApprovals", fields: [user_id], references: [id])
+}
+
+model Denial {
+  id          Int      @id @default(autoincrement())
+  request_id  Int
+  user_id     Int?
+  date_denied DateTime @db.Timestamptz
+  reason      String
+  read        Boolean  @default(false)
+  is_final    Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  request Request @relation("DenialRequest", fields: [request_id], references: [id])
+  user    User?   @relation(name: "UserDenials", fields: [user_id], references: [id])
+}
+
+model Concurrence {
+  id         Int      @id @default(autoincrement())
+  request_id Int
+  user_id    Int?
+  concurred  Boolean  @default(false)
+  conditions String?
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  updatedAt  DateTime @updatedAt @db.Timestamptz
+
+  request Request @relation("ConcurrenceRequest", fields: [request_id], references: [id])
+  user    User?   @relation(name: "UserConcurrences", fields: [user_id], references: [id])
+}
+
+enum UserType {
+  COMMERCIAL
+  FEDERAL_AGENCY
+  NTIA
+}
+
+enum CommonConditionStatus {
+  DRAFT
+  SUBMITTED
+  REJECTED
+  PUBLISHED
+}
+
+model Comment {
+  id          Int      @id @default(autoincrement())
+  request_id  Int
+  user_id     Int?
+  comment     String
+  is_internal Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  request Request @relation("CommentRequest", fields: [request_id], references: [id])
+  user    User?   @relation(name: "UserComments", fields: [user_id], references: [id])
+}
+
+model Action {
+  id         Int        @id @default(autoincrement())
+  request_id Int
+  user_id    Int?
+  action     ActionType
+  details    String?
+  createdAt  DateTime   @default(now()) @db.Timestamptz
+
+  request Request @relation("ActionRequest", fields: [request_id], references: [id])
+  user    User?   @relation("UserActions", fields: [user_id], references: [id])
+}
+
+enum ActionType {
+  approve
+  finalize_denial
+  approve_with_conditions
+  concur
+  concur_with_conditions
+  not_concur
+  request_revisions
+  resubmit
+  auto_approve
+}
+
+model EmailVerification {
+  id         String   @id @default(uuid())
+  email      String
+  token      String
+  isVerified Boolean  @default(false)
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model RequestedRevision {
+  id                Int      @id @default(autoincrement())
+  request_id        Int
+  user_id           Int?
+  requested_changes String[]
+  createdAt         DateTime @default(now()) @db.Timestamptz
+  updatedAt         DateTime @updatedAt @db.Timestamptz
+
+  request Request @relation("RequestedRevisionRequest", fields: [request_id], references: [id])
+  user    User?   @relation("RequestedRevisionUser", fields: [user_id], references: [id])
+}
+
+model Entity {
+  id                      Int      @id @default(autoincrement())
+  abbreviation            String   @unique
+  name                    String
+  type                    UserType
+  active                  Boolean  @default(true)
+  distribution_list_email String?  @db.VarChar(100)
+
+  users              User[]         @relation("EntityUser")
+  inquiriesAsEntityA Inquiry[]      @relation("EntityA")
+  inquiriesAsEntityB Inquiry[]      @relation("EntityB")
+  entityDomains      EntityDomain[] @relation("EntityDomain")
+}
+
+model User {
+  id          Int     @id @default(autoincrement())
+  external_id String  @unique
+  name        String
+  email       String  @unique
+  entity_id   Int
+  can_concur  Boolean @default(false)
+  active      Boolean @default(false)
+
+  entity Entity @relation("EntityUser", fields: [entity_id], references: [id])
+
+  requests            Request[]           @relation("UserRequests")
+  requestDrafts       RequestDraft[]      @relation("UserRequestDrafts")
+  requestedRevisions  RequestedRevision[] @relation("RequestedRevisionUser")
+  messages            Message[]           @relation("MessageUser")
+  comments            Comment[]           @relation("UserComments")
+  actions             Action[]            @relation("UserActions")
+  approvals           Approval[]          @relation("UserApprovals")
+  denials             Denial[]            @relation("UserDenials")
+  concurrences        Concurrence[]       @relation("UserConcurrences")
+  closedInquiries     Inquiry[]           @relation("ClosedBy")
+  messageReadStatuses MessageReadStatus[] @relation("UserMessageReadStatus")
+  commonConditions    CommonCondition[]   @relation("UserCreatedConditions")
+  approvedConditions  CommonCondition[]   @relation("UserApprovedConditions")
+
+  refreshTokens RefreshToken[]
+
+  @@index([entity_id, id], map: "User_entity_id_id_idx")
+}
+
+model Inquiry {
+  id          Int       @id @default(autoincrement())
+  request_id  Int
+  entityA_id  Int
+  entityB_id  Int
+  createdAt   DateTime  @default(now())
+  closed      Boolean   @default(false)
+  closedBy_id Int?
+  closedAt    DateTime?
+
+  request  Request   @relation("InquiryRequest", fields: [request_id], references: [id])
+  entityA  Entity    @relation("EntityA", fields: [entityA_id], references: [id])
+  entityB  Entity    @relation("EntityB", fields: [entityB_id], references: [id])
+  closedBy User?     @relation("ClosedBy", fields: [closedBy_id], references: [id])
+  messages Message[] @relation("MessageInquiry")
+
+  @@unique([request_id, entityA_id, entityB_id])
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  inquiry_id Int
+  sender_id  Int
+  content    String
+  sentAt     DateTime @default(now())
+
+  inquiry      Inquiry             @relation("MessageInquiry", fields: [inquiry_id], references: [id])
+  sender       User                @relation("MessageUser", fields: [sender_id], references: [id])
+  readStatuses MessageReadStatus[] @relation("MessageReadStatus")
+}
+
+model MessageReadStatus {
+  id         Int      @id @default(autoincrement())
+  message_id Int
+  user_id    Int
+  readAt     DateTime @default(now())
+
+  message Message @relation("MessageReadStatus", fields: [message_id], references: [id], onDelete: Cascade)
+  user    User    @relation("UserMessageReadStatus", fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([message_id, user_id])
+}
+
+model RequestDraft {
+  id                      Int       @id @default(autoincrement())
+  fcc_filing_date         DateTime? @default(now()) @db.Timestamptz
+  mission_name            String?   @db.VarChar(50)
+  name_of_licensee        String?   @db.VarChar(50)
+  call_sign               String?   @db.VarChar(8)
+  name_of_launch_vehicle  String?   @db.VarChar(50)
+  city                    String?   @db.VarChar(25)
+  state                   String?   @db.Char(2)
+  latitude                Decimal?  @db.Decimal(7, 4)
+  longitude               Decimal?  @db.Decimal(7, 4)
+  launch_datetime_primary DateTime? @db.Timestamptz
+  launch_datetime_backup  DateTime? @db.Timestamptz
+  orbital_location        String?
+  number_of_frequencies   Int?      @db.SmallInt
+
+  ground_track_from_liftoff_until_payload_separation String?
+  ecf_cartesian_vectors_format_file_desc             String?
+  ecf_cartesian_vectors_format_file_path             String?
+  ground_track_of_launch_vehicle_2d_img_file_desc    String?
+  ground_track_of_launch_vehicle_2d_img_file_path    String?
+
+  primary_poc_name    String? @db.VarChar(50)
+  primary_poc_email   String? @db.VarChar(50)
+  primary_poc_phone   String? @db.VarChar(12)
+  alternate_poc_name  String? @db.VarChar(50)
+  alternate_poc_email String? @db.VarChar(50)
+  alternate_poc_phone String? @db.VarChar(12)
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  user_id   Int?
+
+  user        User?            @relation(name: "UserRequestDrafts", fields: [user_id], references: [id])
+  frequencies FrequencyDraft[] @relation("FrequencyDraftRequestDraft")
+}
+
+model FrequencyDraft {
+  id               Int @id @default(autoincrement())
+  request_draft_id Int
+
+  frequency                                      Decimal?                @db.Decimal(8, 4)
+  location_of_transmitter_on_vehicle_or_platform LocationEnum?
+  eirp                                           Decimal?                @db.Decimal(5, 2)
+  eirp_unit                                      EirpUnit?
+  transmitted_bandwidth                          Decimal?                @db.Decimal(4, 2)
+  transmitted_bandwidth_is_signal_filtered       SignalFilterStatus?
+  transmitted_bandwidth_justification            String?
+  minus_3db_bandwidth                            Decimal?                @db.Decimal(4, 2)
+  minus_3db_bandwidth_before_or_after_filtering  BeforeOrAfterFiltering?
+  minus_20db_bandwidth                           Decimal?                @db.Decimal(4, 2)
+  minus_20db_bandwidth_before_or_after_filtering BeforeOrAfterFiltering?
+  minus_60db_bandwidth                           Decimal?                @db.Decimal(4, 2)
+  minus_60db_bandwidth_before_or_after_filtering BeforeOrAfterFiltering?
+  nature_of_modulating_signals                   String?                 @db.VarChar(50)
+  emission_designator                            String?                 @db.VarChar(50)
+
+  tx_transmission_start    DateTime?     @db.Timestamptz
+  tx_transmission_end      DateTime?     @db.Timestamptz
+  tx_antenna_type          String?       @db.VarChar(100)
+  tx_antenna_gain          Int?          @db.SmallInt
+  tx_antenna_beamwidth     Int?          @db.SmallInt
+  tx_antenna_altitude      Int?
+  tx_antenna_altitude_unit AltitudeUnit?
+  receivers                Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Relation
+  requestDraft RequestDraft @relation("FrequencyDraftRequestDraft", fields: [request_draft_id], references: [id], onDelete: Cascade)
+}
+
+model EntityDomain {
+  id        Int    @id @default(autoincrement())
+  entity_id Int
+  domain    String
+
+  entity Entity @relation("EntityDomain", fields: [entity_id], references: [id])
+}
+
+model RefreshToken {
+  id               Int      @id @default(autoincrement())
+  tokenHash        String
+  user_external_id String
+  user             User     @relation(fields: [user_external_id], references: [external_id])
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model CommonCondition {
+  id               Int                   @id @default(autoincrement())
+  title            String
+  content          String
+  sort_order       Int                   @default(0)
+  status           CommonConditionStatus @default(PUBLISHED)
+  created_by_id    Int?
+  approved_by_id   Int?
+  rejection_reason String?
+  createdAt        DateTime              @default(now()) @db.Timestamptz
+  publishedAt      DateTime?             @db.Timestamptz
+  updatedAt        DateTime              @default(now()) @updatedAt @db.Timestamptz
+
+  created_by  User? @relation("UserCreatedConditions", fields: [created_by_id], references: [id])
+  approved_by User? @relation("UserApprovedConditions", fields: [approved_by_id], references: [id])
+}

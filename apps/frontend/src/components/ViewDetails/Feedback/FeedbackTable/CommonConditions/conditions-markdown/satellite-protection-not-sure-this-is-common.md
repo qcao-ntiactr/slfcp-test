@@ -1,0 +1,4 @@
+- For transmissions overlapping ==[Freq Band]== MHz, ==[Commercial Provider Name]== shall ensure that transmissions are suspended and no receive operations are permitted when the conjunction angle formed by the location ==[coordinates]== (angle vertex), the ==[launch vehicle]==, and any of the following objects are less than or equal to 10 degrees:
+  - ==PACE (Plankton, Aerosol, Cloud, ocean Ecosystem) (NORAD ID 58928)==
+  - ==Soil Moisture Active Passive (SMAP) (NORAD ID 40376)==
+  - ==Center of the Moon.==

@@ -1,0 +1,98 @@
+name: Create Release Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to tag (format: vX.Y.Z)'
+        required: true
+      notes:
+        description: 'Release Tag notes'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  authorize-and-tag:
+    name: Authorize User and Create Tag
+    runs-on: [self-hosted, slfcp, prod]
+    environment: prod
+
+    steps:
+      - name: Validate SemVer Version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version format. Use vX.Y.Z"
+            exit 1
+          fi
+
+      - name: Verify User Authorization (Team Membership)
+        env:
+          ORG: NTIADC
+          TEAM: slfcp-release-approvers
+          GH_TOKEN: ${{ secrets.ORG_PAT }}
+        run: |
+          ACTOR="${GITHUB_ACTOR}"
+
+          echo "Checking if $ACTOR is in team $TEAM..."
+
+          RESPONSE=$(curl -s \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/orgs/$ORG/teams/$TEAM/memberships/$ACTOR")
+
+          STATE=$(echo "$RESPONSE" | jq -r '.state')
+
+          if [[ "$STATE" != "active" ]]; then
+            echo "❌ User $ACTOR is NOT authorized to create release tags."
+            exit 1
+          fi
+
+          echo "✔ User $ACTOR is authorized."
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # required for tag creation
+
+      - name: Configure GitHub Actions Identity
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Ensure Tag Does Not Already Exist
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if git rev-parse "$VERSION" >/dev/null 2>&1; then
+            echo "❌ Tag $VERSION already exists."
+            exit 1
+          fi
+
+      - name: Build tag annotation
+        id: info
+        run: |
+          echo "approver=${GITHUB_ACTOR}" >> $GITHUB_OUTPUT
+          echo "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> $GITHUB_OUTPUT
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          echo "run_url=https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" >> $GITHUB_OUTPUT
+
+      - name: Create annotated tag message
+        run: |
+          TAG="${{ github.event.inputs.version }}"
+          MESSAGE="Version: $TAG
+            Commit: ${{ steps.info.outputs.sha }}
+            Workflow run: ${{ steps.info.outputs.run_url }}
+            Approved by: ${{ steps.info.outputs.approver }}
+            Approved at: ${{ steps.info.outputs.timestamp }}
+            Notes: ${{ github.event.inputs.notes }}"
+
+          echo "$MESSAGE" > tag_message.txt
+
+      - name: Create and Push Tag
+        run: |
+          TAG="${{ github.event.inputs.version }}"
+          git tag -a "$TAG" -F tag_message.txt
+          git push origin "$TAG"
+          echo "✔ Tag pushed: $TAG"

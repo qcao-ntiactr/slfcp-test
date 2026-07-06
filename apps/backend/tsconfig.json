@@ -1,0 +1,25 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": [
+    "api/src/**/*.ts",
+    "scripts/**/*.ts",
+    "prisma/**/*.ts"
+],
+  "types": ["node"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "module": "ESNext",                   // Use ESNext module system for ESM
+    "target": "ESNext",                   // Use modern syntax targeting
+    "moduleResolution": "node",          // Ensure compatibility with Node.js modules
+    "esModuleInterop": true,             // Allow interoperability with CommonJS modules
+    "allowSyntheticDefaultImports": true, // Allow default imports for modules with no default export
+    "resolveJsonModule": true,           // Allow importing JSON files
+    "outDir": "./dist",                  // Output directory for compiled files
+    "declaration": true,                 // Generate declaration files
+    "declarationMap": true,              // Generate declaration source maps
+    "noImplicitAny": false,              // Allow implicit any types
+    "strictPropertyInitialization": false, // Don't require property initialization
+    "skipLibCheck": true,                // Skip type checking of declaration files
+    "strict": false                      // Disable strict type checking
+  }
+}
