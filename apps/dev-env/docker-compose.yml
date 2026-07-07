@@ -1,0 +1,98 @@
+name: slfcp-dev-env
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: slfcp-postgres
+    environment:
+      POSTGRES_DB: slfcp
+      POSTGRES_USER: slfcp
+      POSTGRES_PASSWORD: slfcp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U slfcp -d slfcp"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    container_name: slfcp-azurite
+    environment:
+      AZURITE_ACCOUNTS: slfcpdev:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZg==
+    command:
+      - azurite
+      - --blobHost
+      - 0.0.0.0
+      - --queueHost
+      - 0.0.0.0
+      - --tableHost
+      - 0.0.0.0
+      - --location
+      - /data
+      - --debug
+      - /data/debug.log
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    volumes:
+      - azurite-data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:10000/slfcpdev?comp=list').then(() => process.exit(0)).catch(() => process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  azurite-init:
+    image: mcr.microsoft.com/azure-cli:2.74.0
+    container_name: slfcp-azurite-init
+    depends_on:
+      azurite:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -c
+      - >
+        az storage container create
+        --name slfcp-uploads
+        --connection-string "DefaultEndpointsProtocol=http;AccountName=slfcpdev;AccountKey=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZg==;BlobEndpoint=http://azurite:10000/slfcpdev;QueueEndpoint=http://azurite:10001/slfcpdev;TableEndpoint=http://azurite:10002/slfcpdev;"
+        --output none
+    restart: "no"
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: slfcp-mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  logic-app:
+    build:
+      context: ./logic-app
+    container_name: slfcp-logic-app
+    environment:
+      PORT: 7071
+      LOG_LEVEL: info
+    ports:
+      - "7071:7071"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"fetch('http://127.0.0.1:7071/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\"",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres-data:
+  azurite-data:
