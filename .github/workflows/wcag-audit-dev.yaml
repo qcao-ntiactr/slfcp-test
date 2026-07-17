@@ -17,7 +17,7 @@ concurrency:
 jobs:
   wcag-audit:
     name: Generate WCAG audit artifacts
-    runs-on: [self-hosted, slfcp, dev]
+    runs-on: [ubuntu-latest]
     timeout-minutes: 90
 
     env:
