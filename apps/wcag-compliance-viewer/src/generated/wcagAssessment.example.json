@@ -1,0 +1,48 @@
+{
+  "generatedAt": null,
+  "isPlaceholder": true,
+  "source": {
+    "docxPath": null,
+    "docxCriteriaMatched": 0,
+    "usedBuiltInCriteriaFallback": true
+  },
+  "aiAudit": {
+    "model": null,
+    "batches": 0,
+    "filesIndexed": 0,
+    "rowsReviewed": 0,
+    "checkpointCache": "disabled"
+  },
+  "runtimeEvidence": {
+    "enabled": false,
+    "available": false,
+    "baseUrl": null,
+    "backendBaseUrl": null,
+    "backendAvailable": null,
+    "frontendAvailable": null,
+    "loginUserKey": null,
+    "loginEmail": null,
+    "loginSucceeded": null,
+    "routesVisited": 0,
+    "workflowsVisited": 0,
+    "workflowUsers": [],
+    "issueSignals": 0,
+    "artifactPath": null
+  },
+  "summary": {
+    "total": 0,
+    "byConformance": {}
+  },
+  "tables": [
+    {
+      "title": "Table 1: Success Criteria, Level A",
+      "level": "A",
+      "rows": []
+    },
+    {
+      "title": "Table 2: Success Criteria, Level AA",
+      "level": "AA",
+      "rows": []
+    }
+  ]
+}

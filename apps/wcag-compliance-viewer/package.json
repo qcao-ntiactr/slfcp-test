@@ -1,0 +1,37 @@
+{
+  "name": "wcag-compliance-viewer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node scripts/generate-wcag-report.mjs",
+    "filter-assessment": "node scripts/filter-wcag-assessment.mjs",
+    "export": "node scripts/export-wcag-assessment.mjs",
+    "doctor": "node scripts/wcag-doctor.mjs",
+    "review-coverage": "node scripts/review-wcag-coverage.mjs",
+    "viewer": "node scripts/open-or-start-viewer.mjs",
+    "dev": "vite",
+    "build": "vite build && node scripts/inline-dist-assets.mjs",
+    "preview": "vite preview",
+    "playwright:install": "playwright install chromium"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^2.10.5",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "framer-motion": "^6.5.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "vite": ">=8.0.16"
+  },
+  "devDependencies": {
+    "@playwright/test": ">=1.55.1",
+    "@types/node": "^22.19.17",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "axe-core": "^4.12.1",
+    "playwright": ">=1.55.1",
+    "typescript": "^5.9.3"
+  }
+}

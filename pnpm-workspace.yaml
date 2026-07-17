@@ -3,3 +3,7 @@ packages:
   - "packages/*"
   - "scripts/*"
   - "uat/"
+
+verifyDepsBeforeRun: warn
+managePackageManagerVersions: false
+pmOnFail: ignore

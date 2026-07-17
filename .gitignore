@@ -1,4 +1,7 @@
 .env
+.env.local
+.DS_Store
+**/.DS_Store
 node_modules/
 dist/
 logs/
@@ -8,6 +11,15 @@ logs/
 .zencoder
 .codex
 **/error-context.md
+
+# WCAG compliance viewer generated outputs
+docs/wcag-a-aa-conformance-assessment.md
+docs/wcag-tester-coverage-review.md
+apps/wcag-compliance-viewer/src/generated/*
+!apps/wcag-compliance-viewer/src/generated/.gitkeep
+!apps/wcag-compliance-viewer/src/generated/wcagAssessment.example.json
+apps/wcag-compliance-viewer/dist/
+apps/wcag-compliance-viewer/dist.zip
 
 # SonarQube files (if accidentally added in future)
 *sonar*

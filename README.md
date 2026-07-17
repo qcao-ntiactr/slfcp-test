@@ -212,6 +212,7 @@ Additional documentation is available in the repository:
 - `docs/AUTHENTICATION_GUIDE.md` - Detailed authentication flow and configuration
 - `IMPLEMENTATION_SUMMARY_OPTION2.md` - Cross-domain refresh token implementation via Authorization headers
 - `docs/LOGGING_ENHANCEMENT_SUMMARY.md` - Logging system enhancements
+- `apps/wcag-compliance-viewer/README.md` - WCAG report generation, viewer, offline export, and filtered JSON artifact workflow
 
 ## Logging
 

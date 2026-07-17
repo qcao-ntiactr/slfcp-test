@@ -14,6 +14,12 @@
     "dev:env:down": "docker compose -f apps/dev-env/docker-compose.yml down",
     "dev:env:logs": "docker compose -f apps/dev-env/docker-compose.yml logs -f",
     "dev:env:reset": "docker compose -f apps/dev-env/docker-compose.yml down -v && docker compose -f apps/dev-env/docker-compose.yml up -d --build",
+    "wcag": "node apps/wcag-compliance-viewer/scripts/run-wcag-workflow.mjs",
+    "wcag:check": "node apps/wcag-compliance-viewer/scripts/run-wcag-workflow.mjs --check",
+    "wcag:review-coverage": "node apps/wcag-compliance-viewer/scripts/review-wcag-coverage.mjs",
+    "wcag:doctor": "node apps/wcag-compliance-viewer/scripts/wcag-doctor.mjs",
+    "wcag:generate": "node apps/wcag-compliance-viewer/scripts/generate-wcag-report.mjs",
+    "wcag:viewer": "node apps/wcag-compliance-viewer/scripts/open-or-start-viewer.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -107,6 +113,5 @@
       "uuid": ">=14.0.0",
       "yaml": ">=1.10.3"
     }
-  },
-  "packageManager": "pnpm@10.28.2"
+  }
 }
