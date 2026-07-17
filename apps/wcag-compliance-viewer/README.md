@@ -372,6 +372,8 @@ apps/wcag-compliance-viewer/dist/index.html
 
 or zip the entire `dist` folder.
 
+On every merge to `dev`, `.github/workflows/wcag-audit-dev.yaml` runs `pnpm wcag:check`, builds this offline viewer, and uploads the report files plus `dist/index.html` as a GitHub Actions artifact named `wcag-audit-<commit-sha>`.
+
 ## Filtering Assessment JSON
 
 Use the filter script when you need a smaller JSON artifact for specific criteria or conformance states.

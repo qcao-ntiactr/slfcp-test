@@ -1,0 +1,92 @@
+name: WCAG Audit | DEV
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: wcag-audit-dev
+  cancel-in-progress: true
+
+jobs:
+  wcag-audit:
+    name: Generate WCAG audit artifacts
+    runs-on: [self-hosted, slfcp, dev]
+    timeout-minutes: 90
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      WCAG_VIEWER_OPEN: "false"
+      WCAG_PLAYWRIGHT_ENABLED: "true"
+      WCAG_PLAYWRIGHT_FORCE_MOCK_AUTH: "true"
+      WCAG_PLAYWRIGHT_AUTOSTART_FRONTEND: "true"
+      WCAG_PLAYWRIGHT_AUTOSTART_BACKEND: "true"
+      WCAG_PLAYWRIGHT_PREPARE_DEV_ENV: "true"
+      WCAG_PLAYWRIGHT_SEED_BACKEND: "false"
+      WCAG_PLAYWRIGHT_BASE_URL: "http://localhost:5173"
+      WCAG_PLAYWRIGHT_BACKEND_BASE_URL: "http://localhost:3000"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Reset git state
+        run: git reset --hard
+
+      - name: Clean workspace
+        run: git clean -fdx
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.28.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Verify toolchain
+        run: |
+          node --version
+          pnpm --version
+          docker --version
+          docker compose version
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter wcag-compliance-viewer playwright:install
+
+      - name: Run WCAG check
+        run: pnpm wcag:check
+
+      - name: Build offline WCAG viewer
+        run: pnpm --filter wcag-compliance-viewer build
+
+      - name: Upload WCAG audit artifacts
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: wcag-audit-${{ github.sha }}
+          if-no-files-found: warn
+          retention-days: 30
+          path: |
+            docs/wcag-a-aa-conformance-assessment.md
+            docs/wcag-tester-coverage-review.md
+            apps/wcag-compliance-viewer/src/generated/wcagAssessment.json
+            apps/wcag-compliance-viewer/src/generated/wcagRuntimeEvidence.json
+            apps/wcag-compliance-viewer/src/generated/wcagTesterCoverageReview.json
+            apps/wcag-compliance-viewer/dist/index.html
+
+      - name: Clean WCAG dev services
+        if: always()
+        run: docker compose -f apps/dev-env/docker-compose.yml down -v
