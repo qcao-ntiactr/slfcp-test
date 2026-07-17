@@ -20,6 +20,7 @@ apps/wcag-compliance-viewer/src/generated/*
 !apps/wcag-compliance-viewer/src/generated/wcagAssessment.example.json
 apps/wcag-compliance-viewer/dist/
 apps/wcag-compliance-viewer/dist.zip
+wcag-audit-artifact/
 
 # SonarQube files (if accidentally added in future)
 *sonar*
