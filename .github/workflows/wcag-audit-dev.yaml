@@ -1,6 +1,7 @@
 name: WCAG Audit | DEV
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - dev
