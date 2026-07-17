@@ -6,6 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const appDir = path.resolve(__dirname, '..');
 const distDir = path.join(appDir, 'dist');
 const indexPath = path.join(distDir, 'index.html');
+const singleFilePath = path.join(distDir, 'wcag-compliance-viewer.html');
 
 if (!existsSync(indexPath)) {
   throw new Error(`Expected build output at ${path.relative(appDir, indexPath)}. Run vite build first.`);
@@ -35,5 +36,7 @@ html = html.replace(
 );
 
 writeFileSync(indexPath, html, 'utf8');
+writeFileSync(singleFilePath, html, 'utf8');
 
 console.log(`Inlined WCAG viewer assets into ${path.relative(appDir, indexPath)}.`);
+console.log(`Wrote single-file WCAG viewer to ${path.relative(appDir, singleFilePath)}.`);

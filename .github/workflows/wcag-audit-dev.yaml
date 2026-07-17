@@ -64,11 +64,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Build workspace packages
+        run: pnpm --filter './packages/**' build
+
       - name: Install Playwright Chromium
         run: pnpm --filter wcag-compliance-viewer playwright:install
 
       - name: Run WCAG check
         run: pnpm wcag:check
+
+      - name: Generate filtered WCAG assessments
+        run: |
+          pnpm --filter wcag-compliance-viewer filter-assessment -- status=needs-verification
+          pnpm --filter wcag-compliance-viewer filter-assessment -- status=partially-supports
+          pnpm --filter wcag-compliance-viewer filter-assessment -- status=does-not-support
 
       - name: Build offline WCAG viewer
         run: pnpm --filter wcag-compliance-viewer build
@@ -84,9 +93,13 @@ jobs:
             docs/wcag-a-aa-conformance-assessment.md
             docs/wcag-tester-coverage-review.md
             apps/wcag-compliance-viewer/src/generated/wcagAssessment.json
+            apps/wcag-compliance-viewer/src/generated/wcagAssessment.filtered-needs-verification.json
+            apps/wcag-compliance-viewer/src/generated/wcagAssessment.filtered-partially-supports.json
+            apps/wcag-compliance-viewer/src/generated/wcagAssessment.filtered-does-not-support.json
             apps/wcag-compliance-viewer/src/generated/wcagRuntimeEvidence.json
             apps/wcag-compliance-viewer/src/generated/wcagTesterCoverageReview.json
             apps/wcag-compliance-viewer/dist/index.html
+            apps/wcag-compliance-viewer/dist/wcag-compliance-viewer.html
 
       - name: Clean WCAG dev services
         if: always()

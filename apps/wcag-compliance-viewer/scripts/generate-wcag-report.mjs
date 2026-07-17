@@ -346,6 +346,11 @@ function prepareLocalBackendEnvironment() {
   });
   summary.push('Docker dev service stack is running.');
 
+  runSetupCommand('pnpm', ['--filter', './packages/**', 'build'], {
+    label: 'Workspace package build',
+  });
+  summary.push('Workspace packages are built for backend imports.');
+
   runSetupCommand('pnpm', ['--filter', '@slfcp/backend', 'prisma:generate'], {
     label: 'Backend Prisma client generation',
   });

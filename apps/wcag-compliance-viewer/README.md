@@ -362,17 +362,17 @@ The build script runs:
 vite build && node scripts/inline-dist-assets.mjs
 ```
 
-`inline-dist-assets.mjs` embeds the generated JS and CSS directly into `dist/index.html`. This is necessary because many browsers block external module scripts loaded from `file://`.
+`inline-dist-assets.mjs` embeds the generated JS and CSS directly into `dist/index.html` and also writes a named copy at `dist/wcag-compliance-viewer.html`. This is necessary because many browsers block external module scripts loaded from `file://`.
 
 To share the report offline, send:
 
 ```text
-apps/wcag-compliance-viewer/dist/index.html
+apps/wcag-compliance-viewer/dist/wcag-compliance-viewer.html
 ```
 
-or zip the entire `dist` folder.
+That file is self-contained and can be opened directly from disk.
 
-On every merge to `dev`, `.github/workflows/wcag-audit-dev.yaml` runs `pnpm wcag:check`, builds this offline viewer, and uploads the report files plus `dist/index.html` as a GitHub Actions artifact named `wcag-audit-<commit-sha>`.
+On every merge to `dev`, `.github/workflows/wcag-audit-dev.yaml` runs `pnpm wcag:check`, generates filtered JSON assessments for `Needs Verification`, `Partially Supports`, and `Does Not Support`, builds this offline viewer, and uploads the report files plus `dist/wcag-compliance-viewer.html` as a GitHub Actions artifact named `wcag-audit-<commit-sha>`.
 
 ## Filtering Assessment JSON
 
