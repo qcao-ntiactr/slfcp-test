@@ -97,12 +97,14 @@ jobs:
 
           cp -f docs/wcag-a-aa-conformance-assessment.md wcag-audit-artifact/wcag-a-aa-conformance-assessment.md 2>/dev/null || true
           cp -f docs/wcag-tester-coverage-review.md wcag-audit-artifact/wcag-tester-coverage-review.md 2>/dev/null || true
+          cp -f docs/wcag-token-usage.md wcag-audit-artifact/wcag-token-usage.md 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/src/generated/wcagAssessment.json wcag-audit-artifact/wcagAssessment.json 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/src/generated/wcagAssessment.filtered-needs-verification.json wcag-audit-artifact/wcagAssessment.filtered-needs-verification.json 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/src/generated/wcagAssessment.filtered-partially-supports.json wcag-audit-artifact/wcagAssessment.filtered-partially-supports.json 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/src/generated/wcagAssessment.filtered-does-not-support.json wcag-audit-artifact/wcagAssessment.filtered-does-not-support.json 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/src/generated/wcagRuntimeEvidence.json wcag-audit-artifact/wcagRuntimeEvidence.json 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/src/generated/wcagTesterCoverageReview.json wcag-audit-artifact/wcagTesterCoverageReview.json 2>/dev/null || true
+          cp -f apps/wcag-compliance-viewer/src/generated/wcagTokenUsage.json wcag-audit-artifact/wcagTokenUsage.json 2>/dev/null || true
           cp -f apps/wcag-compliance-viewer/dist/wcag-compliance-viewer.html wcag-audit-artifact/wcag-compliance-viewer.html 2>/dev/null || true
 
           find wcag-audit-artifact -maxdepth 1 -type f -print | sort

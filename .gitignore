@@ -15,6 +15,7 @@ logs/
 # WCAG compliance viewer generated outputs
 docs/wcag-a-aa-conformance-assessment.md
 docs/wcag-tester-coverage-review.md
+docs/wcag-token-usage.md
 apps/wcag-compliance-viewer/src/generated/*
 !apps/wcag-compliance-viewer/src/generated/.gitkeep
 !apps/wcag-compliance-viewer/src/generated/wcagAssessment.example.json

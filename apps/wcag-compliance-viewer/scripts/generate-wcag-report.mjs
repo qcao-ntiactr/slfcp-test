@@ -32,6 +32,8 @@ const {
   markdownOut,
   jsonOut,
   runtimeEvidenceOut,
+  tokenUsageOut,
+  tokenUsageMarkdownOut,
   envPath,
   runtimeOnly,
   openAiApiKey,
@@ -75,6 +77,7 @@ let runtimeEvidence = {
   routes: [],
   summary: ['Playwright runtime evidence has not run yet.'],
 };
+const tokenUsageRequests = [];
 
 function formatDuration(startedAt) {
   return `${((Date.now() - startedAt) / 1000).toFixed(1)}s`;
@@ -1817,7 +1820,110 @@ function getResponseText(payload) {
   return textParts?.join('\n') ?? '';
 }
 
-async function callOpenAiJson(prompt) {
+function numberOrZero(value) {
+  return Number.isFinite(Number(value)) ? Number(value) : 0;
+}
+
+function getTokenUsageFromPayload(payload, api) {
+  const usage = payload?.usage ?? {};
+
+  if (api === 'chat.completions') {
+    return {
+      inputTokens: numberOrZero(usage.prompt_tokens),
+      outputTokens: numberOrZero(usage.completion_tokens),
+      totalTokens: numberOrZero(usage.total_tokens),
+      cachedInputTokens: numberOrZero(usage.prompt_tokens_details?.cached_tokens),
+      reasoningOutputTokens: numberOrZero(usage.completion_tokens_details?.reasoning_tokens),
+    };
+  }
+
+  return {
+    inputTokens: numberOrZero(usage.input_tokens),
+    outputTokens: numberOrZero(usage.output_tokens),
+    totalTokens: numberOrZero(usage.total_tokens),
+    cachedInputTokens: numberOrZero(usage.input_tokens_details?.cached_tokens),
+    reasoningOutputTokens: numberOrZero(usage.output_tokens_details?.reasoning_tokens),
+  };
+}
+
+function recordTokenUsage({ api, batchLabel, payload }) {
+  const usage = getTokenUsageFromPayload(payload, api);
+  tokenUsageRequests.push({
+    sequence: tokenUsageRequests.length + 1,
+    api,
+    batchLabel,
+    model: payload?.model ?? aiModel,
+    responseId: payload?.id ?? null,
+    ...usage,
+  });
+
+  logProgress(`${batchLabel} token usage: ${usage.inputTokens.toLocaleString()} input, ${usage.outputTokens.toLocaleString()} output, ${usage.totalTokens.toLocaleString()} total.`);
+}
+
+function summarizeTokenUsage() {
+  const totals = tokenUsageRequests.reduce((acc, request) => {
+    acc.inputTokens += request.inputTokens;
+    acc.outputTokens += request.outputTokens;
+    acc.totalTokens += request.totalTokens;
+    acc.cachedInputTokens += request.cachedInputTokens;
+    acc.reasoningOutputTokens += request.reasoningOutputTokens;
+    return acc;
+  }, {
+    requests: tokenUsageRequests.length,
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+    cachedInputTokens: 0,
+    reasoningOutputTokens: 0,
+  });
+
+  return {
+    generatedAt: new Date().toISOString(),
+    model: aiModel,
+    totals,
+    requests: tokenUsageRequests,
+  };
+}
+
+function makeTokenUsageMarkdown(tokenUsage) {
+  const rows = tokenUsage.requests.map((request) =>
+    `| ${request.sequence} | ${request.batchLabel} | ${request.api} | ${request.inputTokens} | ${request.outputTokens} | ${request.totalTokens} | ${request.cachedInputTokens} | ${request.reasoningOutputTokens} |`
+  );
+
+  return [
+    '# WCAG Token Usage',
+    '',
+    `Generated: ${tokenUsage.generatedAt}`,
+    `Model: ${tokenUsage.model}`,
+    '',
+    '## Totals',
+    '',
+    `- Requests: ${tokenUsage.totals.requests}`,
+    `- Input tokens: ${tokenUsage.totals.inputTokens}`,
+    `- Output tokens: ${tokenUsage.totals.outputTokens}`,
+    `- Total tokens: ${tokenUsage.totals.totalTokens}`,
+    `- Cached input tokens: ${tokenUsage.totals.cachedInputTokens}`,
+    `- Reasoning output tokens: ${tokenUsage.totals.reasoningOutputTokens}`,
+    '',
+    '## Requests',
+    '',
+    '| # | Batch | API | Input | Output | Total | Cached Input | Reasoning Output |',
+    '| --- | --- | --- | ---: | ---: | ---: | ---: | ---: |',
+    ...(rows.length > 0 ? rows : ['| Not applicable | No OpenAI requests were recorded. | Not applicable | 0 | 0 | 0 | 0 | 0 |']),
+    '',
+  ].join('\n');
+}
+
+function writeTokenUsageArtifacts(tokenUsage = summarizeTokenUsage()) {
+  logProgress(`Writing token usage JSON to ${path.relative(repoRoot, tokenUsageOut)}.`);
+  writeFileSync(tokenUsageOut, `${JSON.stringify(tokenUsage, null, 2)}\n`, 'utf8');
+  logProgress(`Writing token usage markdown to ${path.relative(repoRoot, tokenUsageMarkdownOut)}.`);
+  writeFileSync(tokenUsageMarkdownOut, makeTokenUsageMarkdown(tokenUsage), 'utf8');
+  logProgress(`OpenAI token usage: ${tokenUsage.totals.requests} request(s), ${tokenUsage.totals.totalTokens.toLocaleString()} total tokens.`);
+  return tokenUsage;
+}
+
+async function callOpenAiJson(prompt, batchLabel = 'OpenAI request') {
   const responsesPayload = {
     model: aiModel,
     input: prompt,
@@ -1838,6 +1944,7 @@ async function callOpenAiJson(prompt) {
 
   const payload = await response.json().catch(() => ({}));
   if (response.ok) {
+    recordTokenUsage({ api: 'responses', batchLabel, payload });
     return extractJsonObject(getResponseText(payload));
   }
 
@@ -1867,6 +1974,7 @@ async function callOpenAiJson(prompt) {
     throw new Error(`OpenAI API request failed. Responses API: ${response.status} ${JSON.stringify(payload)}. Chat Completions fallback: ${chatResponse.status} ${JSON.stringify(chatPayload)}`);
   }
 
+  recordTokenUsage({ api: 'chat.completions', batchLabel, payload: chatPayload });
   return extractJsonObject(chatPayload.choices?.[0]?.message?.content ?? '');
 }
 
@@ -1875,7 +1983,7 @@ async function callOpenAiJsonWithRetry(prompt, batchLabel) {
 
   for (let attempt = 1; attempt <= aiMaxRetries + 1; attempt += 1) {
     try {
-      return await callOpenAiJson(prompt);
+      return await callOpenAiJson(prompt, batchLabel);
     } catch (error) {
       lastError = error;
       const attemptsTotal = aiMaxRetries + 1;
@@ -2257,8 +2365,10 @@ logProgress(`Playwright runtime evidence: ${runtimeEvidence.available ? `${runti
 
 if (runtimeOnly) {
   mkdirSync(generatedDir, { recursive: true });
+  mkdirSync(docsDir, { recursive: true });
   logProgress(`Writing Playwright runtime evidence to ${path.relative(repoRoot, runtimeEvidenceOut)}.`);
   writeFileSync(runtimeEvidenceOut, `${JSON.stringify(runtimeEvidence, null, 2)}\n`, 'utf8');
+  writeTokenUsageArtifacts();
   logProgress('Runtime-only generation complete. AI assessment artifacts were not regenerated.');
   process.exit(0);
 }
@@ -2282,6 +2392,7 @@ const byConformance = rows.reduce((acc, item) => {
   acc[item.conformanceLevel] = (acc[item.conformanceLevel] ?? 0) + 1;
   return acc;
 }, {});
+const tokenUsage = summarizeTokenUsage();
 
 const report = {
   generatedAt: new Date().toISOString(),
@@ -2304,6 +2415,11 @@ const report = {
     applicabilityRowsReviewed: criterionApplicabilityRows.length,
     rowsReviewed: aiRows.length,
     checkpointCache: 'disabled',
+    tokenUsage: {
+      artifactPath: path.relative(repoRoot, tokenUsageOut),
+      markdownArtifactPath: path.relative(repoRoot, tokenUsageMarkdownOut),
+      totals: tokenUsage.totals,
+    },
   },
   runtimeEvidence: {
     enabled: runtimeEvidence.enabled,
@@ -2342,10 +2458,13 @@ logProgress(`Writing viewer JSON to ${path.relative(repoRoot, jsonOut)}.`);
 writeFileSync(jsonOut, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
 logProgress(`Writing Playwright runtime evidence to ${path.relative(repoRoot, runtimeEvidenceOut)}.`);
 writeFileSync(runtimeEvidenceOut, `${JSON.stringify(runtimeEvidence, null, 2)}\n`, 'utf8');
+writeTokenUsageArtifacts(tokenUsage);
 
 logProgress(`Generated ${path.relative(repoRoot, markdownOut)}`);
 logProgress(`Generated ${path.relative(repoRoot, jsonOut)}`);
 logProgress(`Generated ${path.relative(repoRoot, runtimeEvidenceOut)}`);
+logProgress(`Generated ${path.relative(repoRoot, tokenUsageOut)}`);
+logProgress(`Generated ${path.relative(repoRoot, tokenUsageMarkdownOut)}`);
 logProgress(`Criteria assessed: ${rows.length}`);
 logProgress(`AI audit: ${aiRows.length} criteria reviewed with ${aiModel}`);
 if (sourceDocx && existsSync(sourceDocx)) {

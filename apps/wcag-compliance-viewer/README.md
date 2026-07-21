@@ -374,6 +374,15 @@ That file is self-contained and can be opened directly from disk.
 
 On every merge to `dev`, `.github/workflows/wcag-audit-dev.yaml` runs `pnpm wcag:check`, generates filtered JSON assessments for `Needs Verification`, `Partially Supports`, and `Does Not Support`, builds this offline viewer, and uploads the report files plus `dist/wcag-compliance-viewer.html` as a GitHub Actions artifact named `wcag-audit-<commit-sha>`.
 
+Each generated audit also writes OpenAI token usage to:
+
+```text
+docs/wcag-token-usage.md
+apps/wcag-compliance-viewer/src/generated/wcagTokenUsage.json
+```
+
+The CI artifact copies these files to the artifact root as `wcag-token-usage.md` and `wcagTokenUsage.json`.
+
 ## Filtering Assessment JSON
 
 Use the filter script when you need a smaller JSON artifact for specific criteria or conformance states.

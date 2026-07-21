@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
+import { existsSync } from 'node:fs';
 import { platform } from 'node:os';
+import path from 'node:path';
 
 import { appDir } from './assessment-utils.mjs';
 
-const require = createRequire(import.meta.url);
 const defaultPort = 7357;
 
 function parseArgs(argv) {
@@ -112,16 +112,18 @@ function openUrl(url) {
 }
 
 function startViewer({ host, port, open }) {
-  const viteBin = require.resolve('vite/bin/vite.js');
-  const child = spawn(process.execPath, [
-    viteBin,
+  const viteBin = path.join(appDir, 'node_modules', '.bin', platform() === 'win32' ? 'vite.cmd' : 'vite');
+  const command = existsSync(viteBin) ? viteBin : 'pnpm';
+  const args = [
+    ...(existsSync(viteBin) ? [] : ['exec', 'vite']),
     '--host',
     host,
     '--port',
     String(port),
     '--strictPort',
     ...(open ? ['--open'] : []),
-  ], {
+  ];
+  const child = spawn(command, args, {
     cwd: appDir,
     env: {
       ...process.env,

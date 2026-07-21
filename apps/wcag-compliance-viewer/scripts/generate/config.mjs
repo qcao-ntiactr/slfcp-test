@@ -155,6 +155,8 @@ export function createGenerationConfig(scriptUrl) {
     markdownOut: path.join(docsDir, 'wcag-a-aa-conformance-assessment.md'),
     jsonOut: path.join(generatedDir, 'wcagAssessment.json'),
     runtimeEvidenceOut: path.join(generatedDir, 'wcagRuntimeEvidence.json'),
+    tokenUsageOut: path.join(generatedDir, 'wcagTokenUsage.json'),
+    tokenUsageMarkdownOut: path.join(docsDir, 'wcag-token-usage.md'),
     envPath,
     cliArgs,
     runtimeOnly: cliArgs.includes('--runtime-only'),
