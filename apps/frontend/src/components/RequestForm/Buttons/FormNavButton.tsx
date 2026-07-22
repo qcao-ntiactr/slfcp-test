@@ -14,6 +14,7 @@ export const FormNavButton = ({
 }: FormNavButtonProps) => {
   return (
     <Button
+      type="button"
       className={className}
       disabled={disabled}
       onClick={clickHandler}

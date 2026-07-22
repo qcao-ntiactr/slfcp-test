@@ -1,10 +1,9 @@
 import { Box, Button, Flex, Image, Text } from '@chakra-ui/react';
-import { useContext } from 'react';
+import { useConfirmNavigationModal } from '../../../context/ConfirmNavigationModalContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import Logo from '../../../assets/slfcp-logo.png';
 import { useHybridAuth, UserRole } from '../../../context/HybridAuthContext';
-import { ConfirmNavigationModalContext } from '../../../context/ConfirmNavigationModalContext';
 import { BreadCrumbs } from '../BreadCrumbs';
 
 import { NavBarMenuButton } from './NavBarMenuButton';
@@ -18,8 +17,8 @@ export const NavBar = () => {
     setNextRoute,
     setConfirmAction,
     shouldConfirmBeforeNavigating,
-  } = useContext(ConfirmNavigationModalContext);
-  const currentPath = useLocation().pathname;
+  } = useConfirmNavigationModal();
+  const { pathname: currentPath } = useLocation();
 
   const navigate = useNavigate();
   const settingsItems = getVisibleNavBarSettingsItems(user?.role);

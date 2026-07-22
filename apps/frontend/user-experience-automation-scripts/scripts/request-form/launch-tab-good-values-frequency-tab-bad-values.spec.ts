@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
 import { fillReceiverField } from './utils';
@@ -49,11 +49,7 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
     // Fill invalid frequency: non-numeric
     await page.locator('#frequency').fill('500');
 
-    // Invalid option for transmitter location
-    await page
-      .locator('#location_of_transmitter_on_vehicle_or_platform')
-      .selectOption({ label: 'Please select an option' })
-      .catch(() => {}); // skip error if option doesn't exist
+    // Leave transmitter location at its invalid default option.
 
     // Invalid EIRP: negative number
     await page.locator('#eirp').fill('-50');
@@ -114,11 +110,23 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
     await fillReceiverField(page, 0, 'antenna_altitude', '');
 
     await fillReceiverField(page, 0, 'latitude_of_receiving_antenna', '999'); // invalid latitude
-    await fillReceiverField(page, 0, 'longitude_of_receiving_antenna', 'abc'); // invalid longitude
+    await fillReceiverField(page, 0, 'longitude_of_receiving_antenna', '');
 
-    await page.getByRole('button', { name: /Add Frequency/i }).click();
-    await page.waitForTimeout(400);
+    const receiverLongitude = page.locator(
+      '#receivers\\.0\\.longitude_of_receiving_antenna'
+    );
+    await expect(
+      page.getByRole('button', { name: /Add Frequency/i })
+    ).toBeDisabled();
+    await receiverLongitude.press('Tab');
   }
 
-  await page.pause(); // Observe form errors or validation behavior
+  await expect(page.getByRole('tab', { name: 'Frequencies' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+  await expect(
+    page.locator('#receivers\\.0\\.longitude_of_receiving_antenna')
+  ).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('#frequency')).toBeVisible();
 });

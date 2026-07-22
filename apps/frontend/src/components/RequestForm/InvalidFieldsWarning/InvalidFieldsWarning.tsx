@@ -14,13 +14,11 @@ import {
   Heading,
 } from '@chakra-ui/react';
 import { FaTimesCircle } from 'react-icons/fa';
+import { requestWizardSteps } from '@slfcp/validation';
 
 import { InvalidField } from '../utils/Helpers';
-import {
-  additionalInfoFields,
-  frequenciesTabFields,
-  launchSiteFields,
-} from '../utils/TabFields';
+
+const wizardSteps = requestWizardSteps();
 
 interface InvalidFieldsWarningProps {
   isOpen: boolean;
@@ -35,17 +33,18 @@ export const InvalidFieldsWarning = ({
   invalidFields,
   visitedTabs,
 }: InvalidFieldsWarningProps) => {
-  const launchSiteErrors = launchSiteFields
+  const launchSiteErrors = wizardSteps.launchSite.fields
     .map((key) => invalidFields.find((f) => f.fieldKey === key))
     .filter((e): e is InvalidField => !!e);
 
   const frequenciesErrors = invalidFields.filter(
     (f) =>
-      (frequenciesTabFields as string[]).includes(f.fieldKey) ||
-      f.fieldKey.startsWith('frequencies')
+      (wizardSteps.frequencies.fields as readonly string[]).includes(
+        f.fieldKey
+      ) || f.fieldKey.startsWith('frequencies')
   );
 
-  const additionalInfoErrors = additionalInfoFields
+  const additionalInfoErrors = wizardSteps.additionalInformation.fields
     .map((key) => invalidFields.find((f) => f.fieldKey === key))
     .filter((e): e is InvalidField => !!e);
 

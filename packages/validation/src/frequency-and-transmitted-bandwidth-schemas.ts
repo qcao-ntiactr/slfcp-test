@@ -8,44 +8,64 @@ export const transmittedBandwidthSchema = z.object({
   transmitted_bandwidth_justification: z.string().optional(), // This field only shows if transmitted_bandwidth is more than 5
 });
 
-const frequencyOnlySchema = z.object({
-  frequency: z.coerce
-    .number({ message: 'Required' })
-    .refine(
-      (val) =>
-        (val >= 2025 && val <= 2110) ||
-        (val >= 2200 && val <= 2290) ||
-        (val >= 2360 && val <= 2395),
-      {
-        message:
-          'Frequency must be within the following ranges: 2025-2110, 2200-2290, 2360-2395',
-      }
-    ),
-});
+export interface FrequencyRange {
+  low: number;
+  high: number;
+}
+
+export const DEFAULT_FREQUENCY_RANGES: readonly FrequencyRange[] = [
+  { low: 2025, high: 2110 },
+  { low: 2200, high: 2290 },
+  { low: 2360, high: 2395 },
+];
+
+const formatFrequencyRanges = (ranges: readonly FrequencyRange[]) => {
+  const labels = ranges.map(({ low, high }) => `${low}–${high} MHz`);
+  if (labels.length === 0) return '';
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} or ${labels[1]}`;
+  return `${labels.slice(0, -1).join(', ')}, or ${labels[labels.length - 1]}`;
+};
+
+const createFrequencyOnlySchema = (ranges: readonly FrequencyRange[]) =>
+  z.object({
+    frequency: z.coerce
+      .number({ message: 'Required' })
+      .refine(
+        (value) =>
+          ranges.some(({ low, high }) => value >= low && value <= high),
+        {
+          message: `Frequency must be within the following ranges: ${formatFrequencyRanges(
+            ranges
+          )}`,
+        }
+      ),
+  });
 
 export const getFrequencyRangeError = (
   freq: number,
-  bw: number
+  bw: number,
+  ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
 ): string | null => {
-  const ranges = [
-    { min: 2025, max: 2110 },
-    { min: 2200, max: 2290 },
-    { min: 2360, max: 2395 },
-  ];
-
-  const allowedRangesText = '2025–2110 MHz, 2200–2290 MHz, or 2360–2395 MHz';
+  const allowedRangesText = formatFrequencyRanges(ranges);
 
   const half = bw / 2;
   const low = freq - half;
   const high = freq + half;
 
   const fits = ranges.some(
-    (r) => freq >= r.min && freq <= r.max && low >= r.min && high <= r.max
+    (range) =>
+      freq >= range.low &&
+      freq <= range.high &&
+      low >= range.low &&
+      high <= range.high
   );
   if (fits) return null;
 
-  const lowOk = ranges.some((r) => low >= r.min && low <= r.max);
-  const highOk = ranges.some((r) => high >= r.min && high <= r.max);
+  const lowOk = ranges.some((range) => low >= range.low && low <= range.high);
+  const highOk = ranges.some(
+    (range) => high >= range.low && high <= range.high
+  );
 
   if (!lowOk && !highOk) {
     return `Frequency minus half the bandwidth (${low.toFixed(
@@ -68,34 +88,38 @@ export const getFrequencyRangeError = (
   return `The frequency range is not fully within one of the allowed bands: ${allowedRangesText}.`;
 };
 
-export const frequencyBandwidthCrossCheckSchema = frequencyOnlySchema
-  .merge(transmittedBandwidthSchema)
-  .superRefine((data, ctx) => {
-    const freq = data.frequency;
-    const bw = data.transmitted_bandwidth;
+export const createFrequencyBandwidthCrossCheckSchema = (
+  ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
+) =>
+  createFrequencyOnlySchema(ranges)
+    .merge(transmittedBandwidthSchema)
+    .superRefine((data, ctx) => {
+      const freq = data.frequency;
+      const bw = data.transmitted_bandwidth;
 
-    if (typeof freq !== 'number' || typeof bw !== 'number') return;
+      if (typeof freq !== 'number' || typeof bw !== 'number') return;
 
-    const errorDetail = getFrequencyRangeError(freq, bw);
-    if (errorDetail) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: errorDetail,
-        path: ['frequency'],
-      });
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: errorDetail,
-        path: ['transmitted_bandwidth'],
-      });
-    }
+      const errorDetail = getFrequencyRangeError(freq, bw, ranges);
+      if (errorDetail) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: errorDetail,
+          path: ['frequency'],
+        });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: errorDetail,
+          path: ['transmitted_bandwidth'],
+        });
+      }
 
-    if (bw > 5 && !data.transmitted_bandwidth_justification) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          'Justification required when transmitted bandwidth is more than 5.',
-        path: ['transmitted_bandwidth_justification'],
-      });
-    }
-  });
+      if (bw > 5 && !data.transmitted_bandwidth_justification) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'Justification required when transmitted bandwidth is more than 5.',
+          path: ['transmitted_bandwidth_justification'],
+        });
+      }
+    });
+

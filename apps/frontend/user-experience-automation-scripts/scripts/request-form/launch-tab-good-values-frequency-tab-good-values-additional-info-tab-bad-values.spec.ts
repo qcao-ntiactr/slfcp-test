@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
 import { getValidFrequencyAndBandwidth, fillReceiverField } from './utils';
@@ -186,6 +186,12 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
   await page.locator('#alternate_poc_email').fill('EmailWithoutProvider');
   await page.locator('#alternate_poc_phone').fill('555123123');
 
-  // You can optionally move forward or just pause here
-  await page.pause();
+  await page.getByRole('tab', { name: 'Summary' }).click();
+
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toHaveAttribute('aria-selected', 'true');
+  await expect(
+    page.locator('#ground_track_from_liftoff_until_payload_separation')
+  ).toHaveAttribute('aria-invalid', 'true');
 });

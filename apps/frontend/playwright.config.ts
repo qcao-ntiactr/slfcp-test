@@ -1,7 +1,10 @@
+/// <reference types="node" />
+
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './user-experience-automation-scripts',
+  testMatch: '**/*.spec.ts',
   timeout: 120000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

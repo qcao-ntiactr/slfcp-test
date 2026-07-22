@@ -1,5 +1,5 @@
 import { Box, Text, useDisclosure } from '@chakra-ui/react';
-import { createContext, ReactNode, useState } from 'react';
+import { createContext, ReactNode, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ConfirmationModal } from '../components/RequestForm/ConfirmationModal';
@@ -15,7 +15,17 @@ interface ConfirmNavigationModalState {
 }
 
 export const ConfirmNavigationModalContext =
-  createContext<ConfirmNavigationModalState>({} as ConfirmNavigationModalState);
+  createContext<ConfirmNavigationModalState | undefined>(undefined);
+
+export const useConfirmNavigationModal = () => {
+  const context = useContext(ConfirmNavigationModalContext);
+  if (!context) {
+    throw new Error(
+      'useConfirmNavigationModal must be used within a ConfirmNavigationModalProvider'
+    );
+  }
+  return context;
+};
 
 interface ConfirmNavigationModalProviderProps {
   children: ReactNode;

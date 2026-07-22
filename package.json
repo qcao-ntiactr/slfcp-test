@@ -1,6 +1,7 @@
 {
   "name": "space-portal-temp",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.33.2",
   "description": "",
   "type": "module",
   "main": "index.js",

@@ -1,14 +1,22 @@
 import {
   FieldValues,
   FormProvider,
+  UseFormReturn,
   useFieldArray,
-  useForm,
   useFormContext,
 } from 'react-hook-form';
 import { Box, Divider, useDisclosure, Text, Collapse } from '@chakra-ui/react';
-import { Dispatch, SetStateAction, useMemo, useState } from 'react';
-import { FrequencyFormDefaults, frequencyFormSchema } from '@slfcp/validation';
-import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  ComponentProps,
+  ComponentType,
+  Dispatch,
+  PropsWithChildren,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { FrequencyFormDefaults } from '@slfcp/validation';
 
 import { frequencyFormDefaultValues } from '../../utils/DefaultValues';
 import { NumberInput } from '../../Inputs';
@@ -19,12 +27,19 @@ import { FrequencyForm } from './FrequencyForm';
 import { FrequencyFormTable } from './FrequencyFormTable/FrequencyFormTable';
 import { normalizeFrequencyFormData } from './utils';
 
-export interface FrequenciesTabProps {
+// Chakra UI 2's Collapse types predate React 19 and omit the children prop.
+const CollapseWithChildren = Collapse as unknown as ComponentType<
+  PropsWithChildren<ComponentProps<typeof Collapse>>
+>;
+
+interface FrequenciesTabProps {
+  frequencyFormMethods: UseFormReturn<FrequencyFormDefaults>;
   isEditingFrequency: boolean;
   setIsEditingFrequency: Dispatch<SetStateAction<boolean>>;
 }
 
 export const FrequenciesTab = ({
+  frequencyFormMethods,
   isEditingFrequency,
   setIsEditingFrequency,
 }: FrequenciesTabProps) => {
@@ -41,68 +56,60 @@ export const FrequenciesTab = ({
     name: 'frequencies',
   });
 
-  const [currentFormValues, setCurrentFormValues] =
-    useState<FrequencyFormDefaults>(frequencyFormDefaultValues);
-
   const [indexOfSelectedFreqForm, setIndexOfSelectedFreqForm] = useState<
     number | undefined
   >(undefined);
 
-  const frequencyFormMethods = useForm<FrequencyFormDefaults>({
-    resolver: zodResolver(frequencyFormSchema),
-    defaultValues: currentFormValues,
-    mode: 'onChange',
-  });
-
   const numberOfFrequencies = watch('number_of_frequencies');
-  const createdFrequencyForms = watch('frequencies');
-
-  const [showFrequencyForm, setShowFrequencyForm] = useState(false);
+  const createdFrequencyForms: FrequencyFormDefaults[] =
+    watch('frequencies') ?? [];
 
   const { isOpen, onClose, onOpen } = useDisclosure();
 
-  const moreFormsThanSpecified = useMemo(() => {
+  const numOfFrequenciesIsValid = useMemo(() => {
     if (numberOfFrequencies === undefined || numberOfFrequencies === '') {
-      return { isMore: false, difference: 0 };
+      return false;
     }
 
-    const numOfFreqValue = numberOfFrequencies;
-    const freqFormsLength = createdFrequencyForms.length;
-
-    const numOfFrequenciesIsValid =
-      (!isNaN(numOfFreqValue) &&
+    return (
+      (!isNaN(Number(numberOfFrequencies)) &&
         (!errors.number_of_frequencies ||
           errors?.number_of_frequencies?.message ===
             'No frequencies have been added.')) ||
-      errors?.number_of_frequencies?.message?.toString().includes('Only');
+      Boolean(
+        errors?.number_of_frequencies?.message?.toString().includes('Only')
+      )
+    );
+  }, [numberOfFrequencies, errors?.number_of_frequencies]);
 
-    if (!numOfFrequenciesIsValid) {
-      setShowFrequencyForm(false);
-    } else {
-      const shouldShowFrequencyForm =
-        isEditingFrequency ||
-        freqFormsLength < numOfFreqValue ||
-        (numOfFreqValue > 0 && freqFormsLength !== numOfFreqValue);
-
-      setShowFrequencyForm(shouldShowFrequencyForm);
-
-      if (!numOfFreqValue) {
-        setShowFrequencyForm(false);
-      } else if (numOfFreqValue < freqFormsLength) {
-        onOpen();
-      }
-    }
-
+  const moreFormsThanSpecified = useMemo(() => {
+    const requestedCount = Number(numberOfFrequencies) || 0;
     return {
-      isMore: numOfFreqValue < freqFormsLength,
-      difference: freqFormsLength - numOfFreqValue,
+      isMore: requestedCount < createdFrequencyForms.length,
+      difference: createdFrequencyForms.length - requestedCount,
     };
-  }, [
-    numberOfFrequencies,
-    createdFrequencyForms,
-    isEditingFrequency,
-    errors?.number_of_frequencies,
-  ]);
+  }, [numberOfFrequencies, createdFrequencyForms.length]);
+
+  useEffect(() => {
+    if (!isOpen && numOfFrequenciesIsValid && moreFormsThanSpecified.isMore) {
+      onOpen();
+    }
+  }, [isOpen, moreFormsThanSpecified.isMore, numOfFrequenciesIsValid, onOpen]);
+
+  const showFrequencyForm =
+    numOfFrequenciesIsValid &&
+    Number(numberOfFrequencies) > 0 &&
+    (isEditingFrequency ||
+      createdFrequencyForms.length !== Number(numberOfFrequencies));
+
+  const selectedFrequency =
+    indexOfSelectedFreqForm === undefined
+      ? undefined
+      : createdFrequencyForms[indexOfSelectedFreqForm];
+  const editorInitialValues = useMemo(
+    () => selectedFrequency ?? frequencyFormMethods.getValues(),
+    [frequencyFormMethods, indexOfSelectedFreqForm, selectedFrequency]
+  );
 
   /**
    * Resets the frequency form to its default values and triggers validation.
@@ -124,12 +131,9 @@ export const FrequenciesTab = ({
 
     clearErrors('frequencies');
     append(normalizedFrequencyForm);
-    setCurrentFormValues(frequencyFormDefaultValues);
     void trigger('frequencies');
     void trigger('number_of_frequencies');
-    setTimeout(() => {
-      void resetForm();
-    }, 600);
+    void resetForm();
   };
 
   /**
@@ -148,10 +152,7 @@ export const FrequenciesTab = ({
       setIndexOfSelectedFreqForm(undefined);
       void trigger(`frequencies.${index}`);
       void trigger('frequencies');
-
-      setTimeout(() => {
-        void resetForm();
-      }, 600);
+      void resetForm();
     }
   };
 
@@ -181,21 +182,18 @@ export const FrequenciesTab = ({
   const handleEditMode = (formToEdit: FrequencyFormDefaults, index: number) => {
     setIsEditingFrequency(true);
     frequencyFormMethods.reset(formToEdit);
-    setCurrentFormValues(formToEdit);
     setIndexOfSelectedFreqForm(index);
   };
 
   /**
    * Cancels the editing mode and resets the form.
-   * Reset is delayed to match collapse animation.
+   * The editor is reset immediately so UI animation timing cannot affect data.
    */
   const handleCancelEdit = () => {
     setIsEditingFrequency(false);
     setIndexOfSelectedFreqForm(undefined);
 
-    setTimeout(() => {
-      resetForm();
-    }, 600);
+    void resetForm();
   };
 
   /**
@@ -241,7 +239,7 @@ export const FrequenciesTab = ({
           />
         )}
       />
-      <Collapse
+      <CollapseWithChildren
         in={showFrequencyForm}
         animateOpacity
         transition={{
@@ -253,14 +251,14 @@ export const FrequenciesTab = ({
           <FormProvider {...frequencyFormMethods}>
             <FrequencyForm
               isEditingFrequency={isEditingFrequency}
-              initialValues={currentFormValues}
+              initialValues={editorInitialValues}
               onSubmit={onSubmit}
               onCancel={handleCancelEdit}
             />
           </FormProvider>
           <Divider mb="5" />
         </Box>
-      </Collapse>
+      </CollapseWithChildren>
       <FrequencyFormTable
         indexOfSelectedFreqForm={indexOfSelectedFreqForm}
         editFreqFormCallback={handleEditMode}

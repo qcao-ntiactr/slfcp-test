@@ -3,7 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx",
     "outDir": "dist",
-     "esModuleInterop": true,
+    "esModuleInterop": true,
     "moduleResolution": "node",
     "allowImportingTsExtensions": true,  // Allow importing TypeScript files with extensions
     "noEmit": true,                       // Prevent emitting compiled JavaScript

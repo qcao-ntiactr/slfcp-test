@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 
-import { getFrequencyRangeError } from './frequency-and-transmitted-bandwidth-schemas';
+import {
+  createFrequencyBandwidthCrossCheckSchema,
+  getFrequencyRangeError,
+} from './frequency-and-transmitted-bandwidth-schemas';
 
 describe('getFrequencyRangeError - positive cases (returns null)', () => {
   it('returns null when range is fully within 2025–2110 MHz', () => {
@@ -53,5 +56,20 @@ describe('getFrequencyRangeError - negative cases (returns error string)', () =>
     expect(getFrequencyRangeError(freq, bw)).toMatch(
       'The frequency range is not fully within one of the allowed bands: 2025–2110 MHz, 2200–2290 MHz, or 2360–2395 MHz.'
     );
+  });
+
+  it('does not include an undefined range label when no ranges are allowed', () => {
+    expect(getFrequencyRangeError(2250, 4, [])).not.toContain('undefined');
+
+    const result = createFrequencyBandwidthCrossCheckSchema([]).safeParse({
+      frequency: 2250,
+      transmitted_bandwidth: 4,
+    });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.map(({ message }) => message)).not.toContain(
+        expect.stringContaining('undefined')
+      );
+    }
   });
 });

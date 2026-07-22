@@ -1,6 +1,6 @@
 import path from 'path';
 
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
 import { getValidFrequencyAndBandwidth, fillReceiverField } from './utils';
@@ -215,5 +215,9 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
   // === TAB 4: Summary ===
   await page.getByRole('tab', { name: 'Summary' }).click();
 
-  await page.pause(); // You can replace this with a "Submit" if needed
+  await expect(page.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeEnabled();
 });

@@ -6,7 +6,11 @@ import {
   isoDateSchema,
   transmissionDateSchemas,
 } from './transmission-date-schemas.js';
-import { frequencyBandwidthCrossCheckSchema } from './frequency-and-transmitted-bandwidth-schemas.js';
+import {
+  createFrequencyBandwidthCrossCheckSchema,
+  DEFAULT_FREQUENCY_RANGES,
+  FrequencyRange,
+} from './frequency-and-transmitted-bandwidth-schemas.js';
 
 const cityNameRegex = /^[A-Za-z]+(?:[ .'-][A-Za-z]+)*$/;
 const nameRegex = /^[A-Za-z]+(?:[ '-][\p{L}]+)*$/u;
@@ -214,10 +218,18 @@ export const frequencySchema = z.object({
   validation allows the refine logic to run while the user is filling out the form
   (zod's default behavior is to run superRefine AFTER the rest of the form is valid)
   */
-export const frequencyFormSchema = z.intersection(
-  frequencySchema,
-  z.intersection(transmissionDateSchemas, frequencyBandwidthCrossCheckSchema)
-);
+const createFrequencyFormSchema = (
+  ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
+) =>
+  z.intersection(
+    frequencySchema,
+    z.intersection(
+      transmissionDateSchemas,
+      createFrequencyBandwidthCrossCheckSchema(ranges)
+    )
+  );
+
+export const frequencyFormSchema = createFrequencyFormSchema();
 
 //LAUNCH SITE TAB
 export const launchSiteSchema = z.object({
@@ -259,29 +271,46 @@ export const launchSiteSchema = z.object({
 });
 
 // FREQUENCIES TAB
-export const frequenciesTabSchema = z
-  .object({
+const createFrequenciesTabBaseSchema = (
+  itemSchema = frequencyFormSchema
+) =>
+  z.object({
     number_of_frequencies: z.coerce
       .number({ message: 'Required' })
+      .int('This field must be a whole number.')
       .min(1, 'At least 1 frequency is required.')
       .max(50, 'Maximum number of allowed frequencies is 50.'),
-    frequencies: z.array(frequencyFormSchema).min(1).max(50),
-  })
-  .superRefine((data, ctx) => {
-    const noFrequenciesMessage = 'No frequencies have been added.';
-    const insufficientFrequenciesMessage = `Only ${data.frequencies.length} out of ${data.number_of_frequencies} frequencies entered.`;
-
-    if (data.number_of_frequencies !== data.frequencies.length) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message:
-          data.frequencies.length > 0
-            ? insufficientFrequenciesMessage
-            : noFrequenciesMessage,
-        path: ['number_of_frequencies'],
-      });
-    }
+    frequencies: z.array(itemSchema).min(1).max(50),
   });
+
+export const frequenciesTabBaseSchema = createFrequenciesTabBaseSchema();
+
+const validateFrequencyCount = (
+  data: { number_of_frequencies: number; frequencies: unknown[] },
+  ctx: z.RefinementCtx
+) => {
+  if (data.number_of_frequencies !== data.frequencies.length) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        data.frequencies.length > 0
+          ? `Only ${data.frequencies.length} out of ${data.number_of_frequencies} frequencies entered.`
+          : 'No frequencies have been added.',
+      path: ['number_of_frequencies'],
+    });
+  }
+};
+
+export const frequenciesTabSchema = frequenciesTabBaseSchema.superRefine(
+  validateFrequencyCount
+);
+
+export const createFrequenciesTabSchema = (
+  ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
+) =>
+  createFrequenciesTabBaseSchema(createFrequencyFormSchema(ranges)).superRefine(
+    validateFrequencyCount
+  );
 
 const ACCEPTED_FILE_TYPES = {
   image: ['image/jpeg', 'image/jpg', 'image/png'],
@@ -351,9 +380,14 @@ export const additionalInfoSchema = z.object({
   alternate_poc_phone: phoneSchema,
 });
 
-export const portalFormSchema = launchSiteSchema
-  .and(frequenciesTabSchema)
-  .and(additionalInfoSchema);
+export const createPortalFormSchema = (
+  ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
+) =>
+  launchSiteSchema
+    .and(createFrequenciesTabSchema(ranges))
+    .and(additionalInfoSchema);
+
+export const portalFormSchema = createPortalFormSchema();
 
 export type PortalFormData = z.infer<typeof portalFormSchema>;
 
