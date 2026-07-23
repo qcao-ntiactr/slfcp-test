@@ -46,6 +46,7 @@ export const AntennaAltitudeFields = ({
         <InputGroup w="sm">
           <NumberInput field={field} isReadOnly={isReadOnly} />
           <InputRightAddon
+            id={unitFieldName}
             marginLeft="5px"
             tabIndex={0}
             onClick={isReadOnly ? undefined : handleUnitChange}

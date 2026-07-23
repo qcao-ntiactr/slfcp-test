@@ -21,8 +21,9 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
   await page.getByLabel('Password').fill('password123');
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  // --- Navigate to form ---
-  await page.goto(formUrl);
+  // --- Navigate to form through the application ---
+  await page.getByRole('button', { name: 'New Request', exact: true }).click();
+  await expect(page).toHaveURL(formUrl);
 
   // === TAB 0: Launch Site ===
   await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
@@ -37,33 +38,27 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
   await page.locator('#launch_datetime_backup').fill('2030-07-11T08:30');
   await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
 
-  await page.locator('.forward-submit-btn').click(); // go to Frequencies tab
+  await page.getByRole('button', { name: 'Frequencies' }).click();
 
   // === TAB 1: Frequencies ===
   await page
     .getByLabel('Number Of Frequencies')
     .fill(numFrequencies.toString());
+  await expect(page.locator('#frequency')).toBeVisible();
 
   for (let i = 0; i < numFrequencies; i++) {
-    await page.waitForTimeout(200);
-
     const { frequency, transmittedBandwidth } = getValidFrequencyAndBandwidth();
 
-    const eirp = (Math.random() * 999).toFixed(2);
-    const gain = (Math.random() * 99).toFixed(1);
-    const beamwidth = (Math.random() * 360 + 1).toFixed(1);
+    const eirp = '100';
+    const gain = '12.5';
+    const beamwidth = '45';
     const shouldJustify = transmittedBandwidth > 5;
-    const locationOptions = ['First Stage', 'Second Stage', 'Ground'];
-    const locationOption =
-      locationOptions[Math.floor(Math.random() * locationOptions.length)];
 
     await page.locator('#frequency').fill(frequency.toString());
 
     await page
       .locator('#location_of_transmitter_on_vehicle_or_platform')
-      .selectOption({
-        label: Math.random() < 0.5 ? 'First Stage' : 'Second Stage',
-      });
+      .selectOption({ label: 'First Stage' });
 
     await page.locator('#eirp').fill(eirp);
     await page.getByLabel(/Change the EIRP unit/).click();
@@ -74,9 +69,7 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
 
     await page
       .locator('#transmitted_bandwidth_is_signal_filtered')
-      .getByText(
-        Math.random() < 0.5 ? 'Signal is Filtered' : 'Signal is Not Filtered'
-      )
+      .getByText('Signal is Filtered')
       .click();
 
     if (shouldJustify) {
@@ -87,28 +80,22 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
       await justificationInput.fill('High data rate required');
     }
 
-    await page
-      .locator('#minus_3db_bandwidth')
-      .fill((Math.random() * 99).toFixed(2));
+    await page.locator('#minus_3db_bandwidth').fill('3');
     await page
       .locator('#minus_3db_bandwidth_before_or_after_filtering')
-      .getByText(Math.random() < 0.5 ? 'Before Filtering' : 'After Filtering')
+      .getByText('Before Filtering')
       .click();
 
-    await page
-      .locator('#minus_20db_bandwidth')
-      .fill((Math.random() * 99).toFixed(2));
+    await page.locator('#minus_20db_bandwidth').fill('10');
     await page
       .locator('#minus_20db_bandwidth_before_or_after_filtering')
-      .getByText(Math.random() < 0.5 ? 'Before Filtering' : 'After Filtering')
+      .getByText('After Filtering')
       .click();
 
-    await page
-      .locator('#minus_60db_bandwidth')
-      .fill((Math.random() * 99).toFixed(2));
+    await page.locator('#minus_60db_bandwidth').fill('20');
     await page
       .locator('#minus_60db_bandwidth_before_or_after_filtering')
-      .getByText(Math.random() < 0.5 ? 'Before Filtering' : 'After Filtering')
+      .getByText('After Filtering')
       .click();
 
     await page.locator('#nature_of_modulating_signals').fill('Digital');
@@ -120,12 +107,11 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
     await page.locator('#tx_antenna_type').fill('Patch Antenna');
     await page.locator('#tx_antenna_gain').fill(gain);
     await page.locator('#tx_antenna_beamwidth').fill(beamwidth);
+    await page.locator('#tx_antenna_altitude').fill('100');
     await page
-      .locator('#tx_antenna_altitude')
-      .fill((Math.random() * 100).toFixed(2));
-    await page
-      .getByLabel(/Change the altitude unit/)
-      .first()
+      .locator(
+        '#tx_antenna_altitude + [aria-label^="Change the altitude unit"]'
+      )
       .click();
 
     // Receiver Section (first receiver in the array)
@@ -134,12 +120,7 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
     await fillReceiverField(page, 0, 'antenna_type', 'Dish Antenna');
     await fillReceiverField(page, 0, 'antenna_gain', gain);
     await fillReceiverField(page, 0, 'antenna_beamwidth', beamwidth);
-    await fillReceiverField(
-      page,
-      0,
-      'antenna_altitude',
-      (Math.random() * 100).toFixed(2)
-    );
+    await fillReceiverField(page, 0, 'antenna_altitude', '100');
     await fillReceiverField(page, 0, 'antenna_altitude_unit', '', {
       click: true,
     });
@@ -147,25 +128,50 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
       page,
       0,
       'location_of_receiving_ground_station',
-      locationOption,
+      'Ground',
       { selectOption: true }
     );
     await fillReceiverField(
       page,
       0,
       'latitude_of_receiving_antenna',
-      (Math.random() * 180 - 90).toFixed(4)
+      '10.1234'
     );
     await fillReceiverField(
       page,
       0,
       'longitude_of_receiving_antenna',
-      (Math.random() * 360 - 180).toFixed(4)
+      '-70.5678'
     );
 
     await page.getByRole('button', { name: /Add Frequency/i }).click();
-    await page.waitForTimeout(400);
+    const frequencyLabel = numFrequencies === 1 ? 'frequency' : 'frequencies';
+    await expect(
+      page.getByRole('heading', {
+        name: `${i + 1} out of ${numFrequencies} ${frequencyLabel} added`,
+      })
+    ).toBeVisible();
   }
+
+  await page.getByRole('button', { name: 'Edit frequency' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Edit Frequency' })
+  ).toBeVisible();
+  await expect(page.locator('#frequency')).toHaveValue('2050');
+  await expect(page.getByRole('button', { name: 'Back' })).toBeDisabled();
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save Draft' })).toBeDisabled();
+
+  await page.locator('#frequency').fill('2055');
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Edit Frequency' })
+  ).not.toBeVisible();
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeEnabled();
 
   // === TAB 2: Additional Information ===
   await page.getByRole('tab', { name: 'Additional Information' }).click();
@@ -219,5 +225,36 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
     'aria-selected',
     'true'
   );
+  await expect(page.getByLabel('Mission Name', { exact: true })).toHaveValue(
+    'Falcon Heavy Demo Mission'
+  );
+  await expect(
+    page.getByRole('cell', { name: '2055', exact: true })
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Submit' })).toBeEnabled();
+
+  let submittedBody = '';
+  await page.route('**/requests', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+
+    submittedBody = route.request().postData() ?? '';
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ request: { id: 123 } }),
+    });
+  });
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(
+    page.getByRole('dialog', { name: 'Request Submitted' })
+  ).toBeVisible();
+  expect(submittedBody).toContain('name="mission_name"');
+  expect(submittedBody).toContain('Falcon Heavy Demo Mission');
+  expect(submittedBody).toContain('name="frequencies"');
+  expect(submittedBody).toContain('"frequency":2055');
 });

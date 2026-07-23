@@ -20,8 +20,9 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
   await page.getByLabel('Password').fill('password123');
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  // --- Navigate to form ---
-  await page.goto(formUrl);
+  // --- Navigate to form through the application ---
+  await page.getByRole('button', { name: 'New Request', exact: true }).click();
+  await expect(page).toHaveURL(formUrl);
 
   // === TAB 0: Launch Site ===
   await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
@@ -36,16 +37,15 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
   await page.locator('#launch_datetime_backup').fill('2027-07-11T08:30');
   await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
 
-  await page.locator('.forward-submit-btn').click(); // go to Frequencies tab
+  await page.getByRole('button', { name: 'Frequencies' }).click();
 
   // === TAB 1: Frequencies ===
   await page
     .getByLabel('Number Of Frequencies')
     .fill(numFrequencies.toString());
+  await expect(page.locator('#frequency')).toBeVisible();
 
   for (let i = 0; i < numFrequencies; i++) {
-    await page.waitForTimeout(200);
-
     // Fill invalid frequency: non-numeric
     await page.locator('#frequency').fill('500');
 
@@ -97,8 +97,9 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
     await page.locator('#tx_antenna_beamwidth').fill('9999');
     await page.locator('#tx_antenna_altitude').fill('-3333');
     await page
-      .getByLabel(/Change the altitude unit/)
-      .first()
+      .locator(
+        '#tx_antenna_altitude + [aria-label^="Change the altitude unit"]'
+      )
       .click();
 
     // Receiver Section (leave blank for validation errors)

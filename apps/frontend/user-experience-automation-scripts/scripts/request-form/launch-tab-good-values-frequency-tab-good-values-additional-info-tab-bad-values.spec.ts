@@ -24,8 +24,9 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
   await page.getByLabel('Password').fill('password123');
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  // --- Navigate to form ---
-  await page.goto(formUrl);
+  // --- Navigate to form through the application ---
+  await page.getByRole('button', { name: 'New Request', exact: true }).click();
+  await expect(page).toHaveURL(formUrl);
 
   // === TAB 0: Launch Site ===
   await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
@@ -39,22 +40,19 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
   await page.locator('#launch_datetime_primary').fill('2027-07-10T08:30');
   await page.locator('#launch_datetime_backup').fill('2027-07-11T08:30');
   await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
-  await page.locator('.forward-submit-btn').click();
+  await page.getByRole('button', { name: 'Frequencies' }).click();
 
   // === TAB 1: Frequencies (Valid Values) ===
   await page
     .getByLabel('Number Of Frequencies')
     .fill(numFrequencies.toString());
+  await expect(page.locator('#frequency')).toBeVisible();
 
   for (let i = 0; i < numFrequencies; i++) {
-    await page.waitForTimeout(200);
-    const eirp = (Math.random() * 999).toFixed(2);
-    const gain = (Math.random() * 10 + 5).toFixed(1);
-    const beamwidth = (Math.random() * 60 + 10).toFixed(1);
-    const locationOptions = ['First Stage', 'Second Stage', 'Ground'];
+    const eirp = '100';
+    const gain = '12.5';
+    const beamwidth = '45';
     const shouldJustify = transmittedBandwidth > 5;
-    const locationOption =
-      locationOptions[Math.floor(Math.random() * locationOptions.length)];
 
     await page.locator('#frequency').fill(frequency.toString());
     await page
@@ -96,21 +94,16 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
 
     await page.locator('#nature_of_modulating_signals').fill('Digital');
     await page.locator('#emission_designator').fill('16K0F3E');
+    await page.locator('#tx_transmission_start').fill('2027-07-01T08:00');
+    await page.locator('#tx_transmission_end').fill('2027-07-01T09:00');
+    await page.locator('#tx_antenna_type').fill('Patch Antenna');
+    await page.locator('#tx_antenna_gain').fill(gain);
+    await page.locator('#tx_antenna_beamwidth').fill(beamwidth);
+    await page.locator('#tx_antenna_altitude').fill('100');
     await page
-      .locator('#tx_transmission_start')
-      .first()
-      .fill('2027-07-01T08:00');
-    await page.locator('#tx_transmission_end').first().fill('2027-07-01T09:00');
-    await page.locator('#tx_antenna_type').first().fill('Patch Antenna');
-    await page.locator('#tx_antenna_gain').first().fill(gain);
-    await page.locator('#tx_antenna_beamwidth').first().fill(beamwidth);
-    await page
-      .locator('#tx_antenna_altitude')
-      .first()
-      .fill((Math.random() * 100).toFixed(2));
-    await page
-      .getByLabel(/Change the altitude unit/)
-      .first()
+      .locator(
+        '#tx_antenna_altitude + [aria-label^="Change the altitude unit"]'
+      )
       .click();
 
     // Receiver Section (first receiver in the array)
@@ -119,12 +112,7 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
     await fillReceiverField(page, 0, 'antenna_type', 'Dish Antenna');
     await fillReceiverField(page, 0, 'antenna_gain', gain);
     await fillReceiverField(page, 0, 'antenna_beamwidth', beamwidth);
-    await fillReceiverField(
-      page,
-      0,
-      'antenna_altitude',
-      (Math.random() * 100).toFixed(2)
-    );
+    await fillReceiverField(page, 0, 'antenna_altitude', '100');
     await fillReceiverField(page, 0, 'antenna_altitude_unit', '', {
       click: true,
     });
@@ -132,7 +120,7 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
       page,
       0,
       'location_of_receiving_ground_station',
-      locationOption,
+      'Ground',
       { selectOption: true }
     );
     await fillReceiverField(
@@ -149,7 +137,12 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
     );
 
     await page.getByRole('button', { name: /Add Frequency/i }).click();
-    await page.waitForTimeout(400);
+    const frequencyLabel = numFrequencies === 1 ? 'frequency' : 'frequencies';
+    await expect(
+      page.getByRole('heading', {
+        name: `${i + 1} out of ${numFrequencies} ${frequencyLabel} added`,
+      })
+    ).toBeVisible();
   }
 
   // === TAB 2: Additional Information (Invalid Values) ===

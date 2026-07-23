@@ -71,9 +71,7 @@ const stepHasErrors = <TValues extends FieldValues>(
   step: FormWizardStep<TValues>
 ) =>
   Boolean(
-    step.validation?.fields.some((field) => get(errors, field) !== undefined) ||
-    (step.id === 'frequencies' &&
-      Object.keys(errors).some((field) => field.startsWith('frequencies')))
+    step.validation?.fields.some((field) => get(errors, field) !== undefined)
   );
 
 const WizardTab = ({
@@ -89,6 +87,7 @@ const WizardTab = ({
     fontWeight="bold"
     color={isInvalid ? 'red.600' : undefined}
     isDisabled={isDisabled}
+    aria-invalid={isInvalid}
     pt={5}
     pb={3}
   >
@@ -231,7 +230,9 @@ const TabbedFormWizardLayout = <TValues extends FieldValues>({
               w="2xs"
               backgroundColor="white"
               border="1px #4a5568 solid"
-              disabled={isLoading || secondaryAction.isDisabled}
+              disabled={
+                navigationBlocked || isLoading || secondaryAction.isDisabled
+              }
             >
               {secondaryAction.label}
             </Button>

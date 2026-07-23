@@ -14,8 +14,9 @@ test('Launch Site tab with invalid values', async ({ page }) => {
   await page.getByLabel('Password').fill('password123');
   await page.getByRole('button', { name: 'Sign In' }).click();
 
-  // --- Navigate to form ---
-  await page.goto(formUrl);
+  // --- Navigate to form through the application ---
+  await page.getByRole('button', { name: 'New Request', exact: true }).click();
+  await expect(page).toHaveURL(formUrl);
 
   // === TAB 0: Launch Site ===
   await page.locator('#mission_name').fill(''); // Empty
@@ -32,7 +33,7 @@ test('Launch Site tab with invalid values', async ({ page }) => {
   await page.locator('#orbital_location').fill(''); // Empty orbital location
 
   // Try to go to the next tab (should trigger validation errors)
-  await page.locator('.forward-submit-btn').click();
+  await page.getByRole('button', { name: 'Frequencies' }).click();
 
   await expect(page.getByRole('tab', { name: 'Launch Site' })).toHaveAttribute(
     'aria-selected',
