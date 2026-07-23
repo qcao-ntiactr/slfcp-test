@@ -8,9 +8,8 @@ import {
   portalFormSchema,
   requestWizardSteps,
 } from '@slfcp/validation';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Wizard } from 'react-use-wizard';
 import { RequestDetails } from 'apps/frontend/src/types.ts';
 
 import {
@@ -30,11 +29,10 @@ import {
 import { useHybridAuth, UserRole } from '../../../context/HybridAuthContext';
 import { ConfirmationModal } from '../ConfirmationModal.tsx';
 import { InvalidFieldsWarning } from '../InvalidFieldsWarning/InvalidFieldsWarning.tsx';
-
 import {
-  getVisitedRequestTabs,
-  RequestWizardLayout,
-} from './RequestWizardLayout.tsx';
+  FormWizardStep,
+  TabbedFormWizard,
+} from '../../FormWizard/TabbedFormWizard.tsx';
 
 export interface FormContainerProps {
   request?: Partial<RequestDetails>;
@@ -56,7 +54,7 @@ export const FormContainer = ({
   draftId,
   isEditingDraft = false,
 }: FormContainerProps) => {
-  const wizardSteps = requestWizardSteps();
+  const wizardSteps = useMemo(() => requestWizardSteps(), []);
   const methods = useForm<PortalFormDefaults>({
     resolver: zodResolver(portalFormSchema),
     defaultValues: request ?? defaultValues,
@@ -106,22 +104,25 @@ export const FormContainer = ({
   } = useDisclosure();
 
   const allInvalidFields = getNonRequiredErrors(errors);
-  const visitedTabs = getVisitedRequestTabs(highestVisitedStep);
+  const visitedTabs = {
+    0: true,
+    1: highestVisitedStep >= 1,
+    2: highestVisitedStep >= 2,
+    3: highestVisitedStep >= 3,
+  };
 
-  const invalidFieldsExist = allInvalidFields.some((f) => {
+  const isFrequencyField = (fieldKey: string) =>
+    (wizardSteps.frequencies.fields as readonly string[]).includes(fieldKey) ||
+    fieldKey.startsWith('frequencies');
+
+  const applicableInvalidFields = allInvalidFields.filter((f) => {
     if (
       wizardSteps.launchSite.fields.includes(
         f.fieldKey as (typeof wizardSteps.launchSite.fields)[number]
       )
     )
       return visitedTabs[0];
-    if (
-      (wizardSteps.frequencies.fields as readonly string[]).includes(
-        f.fieldKey
-      ) ||
-      f.fieldKey.startsWith('frequencies')
-    )
-      return visitedTabs[1];
+    if (isFrequencyField(f.fieldKey)) return visitedTabs[1];
     if (
       wizardSteps.additionalInformation.fields.includes(
         f.fieldKey as (typeof wizardSteps.additionalInformation.fields)[number]
@@ -130,6 +131,10 @@ export const FormContainer = ({
       return visitedTabs[2];
     return true;
   });
+  const invalidFieldsExist = applicableInvalidFields.length > 0;
+  const exclusivelyFrequencyInvalidFields =
+    invalidFieldsExist &&
+    applicableInvalidFields.every((field) => isFrequencyField(field.fieldKey));
 
   const toast = useToast();
 
@@ -238,6 +243,42 @@ export const FormContainer = ({
     }
   };
 
+  const requestFormSteps: readonly FormWizardStep<PortalFormDefaults>[] = [
+    {
+      id: 'launch-site',
+      title: 'Launch Site',
+      content: <LaunchSiteTab />,
+      contentPadding: 0,
+      validation: wizardSteps.launchSite,
+    },
+    {
+      id: 'frequencies',
+      title: 'Frequencies',
+      content: (
+        <FrequenciesTab
+          frequencyFormMethods={frequencyFormMethods}
+          isEditingFrequency={isEditingFrequency}
+          setIsEditingFrequency={setIsEditingFrequency}
+        />
+      ),
+      contentPadding: 0,
+      validation: wizardSteps.frequencies,
+    },
+    {
+      id: 'additional-information',
+      title: 'Additional Information',
+      content: <AdditionalInformationTab />,
+      contentPadding: 0,
+      validation: wizardSteps.additionalInformation,
+    },
+    {
+      id: 'summary',
+      title: 'Summary',
+      content: <SummaryTab />,
+      contentPadding: 0,
+    },
+  ];
+
   return (
     <FormProvider {...methods}>
       <form
@@ -245,38 +286,34 @@ export const FormContainer = ({
         method="post"
         encType="multipart/form-data"
       >
-        <Wizard
-          onStepChange={(step) => {
-            setActiveStep(step);
-            setHighestVisitedStep((previous) => Math.max(previous, step));
+        <TabbedFormWizard
+          headerText={headerText}
+          steps={requestFormSteps}
+          isSubmitting={isLoading}
+          navigationBlocked={isEditingFrequency}
+          onCancel={handleCancelButtonClick}
+          onProgressChange={({
+            activeStep: nextActiveStep,
+            highestVisitedStep: nextHighestVisitedStep,
+          }) => {
+            setActiveStep(nextActiveStep);
+            setHighestVisitedStep(nextHighestVisitedStep);
           }}
-          wrapper={
-            <RequestWizardLayout
-              headerText={headerText}
-              highestVisitedStep={highestVisitedStep}
-              isEditingFrequency={isEditingFrequency}
-              isSubmitting={isLoading}
-              onCancel={handleCancelButtonClick}
-              onRequestSaveDraft={() => {
-                if (invalidFieldsExist && activeStep !== 1) {
-                  validationFailedModalOnOpen();
-                } else {
-                  saveDraftModalOnOpen();
-                }
-              }}
-              showSaveDraft={draftId !== undefined || !request?.id}
-            />
-          }
-        >
-          <LaunchSiteTab />
-          <FrequenciesTab
-            frequencyFormMethods={frequencyFormMethods}
-            isEditingFrequency={isEditingFrequency}
-            setIsEditingFrequency={setIsEditingFrequency}
-          />
-          <AdditionalInformationTab />
-          <SummaryTab />
-        </Wizard>
+          secondaryAction={{
+            label: 'Save Draft',
+            isVisible: draftId !== undefined || !request?.id,
+            onClick: () => {
+              if (
+                invalidFieldsExist &&
+                !(activeStep === 1 && exclusivelyFrequencyInvalidFields)
+              ) {
+                validationFailedModalOnOpen();
+              } else {
+                saveDraftModalOnOpen();
+              }
+            },
+          }}
+        />
       </form>
       <InvalidFieldsWarning
         isOpen={validationFailedModalIsOpen}
