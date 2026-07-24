@@ -1,7 +1,11 @@
 import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
-import { fillReceiverField } from './utils';
+import {
+  fillReceiverField,
+  fillValidLaunchSite,
+  loginAndOpenRequestForm,
+} from './utils';
 
 dotenv.config();
 
@@ -14,28 +18,8 @@ const numFrequencies = parseInt(process.env.NUM_FREQ || '1', 10);
 test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
   page,
 }) => {
-  // --- Login ---
-  await page.goto(loginUrl);
-  await page.getByLabel('Email Address').fill('commercial@qa.com');
-  await page.getByLabel('Password').fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-
-  // --- Navigate to form through the application ---
-  await page.getByRole('button', { name: 'New Request', exact: true }).click();
-  await expect(page).toHaveURL(formUrl);
-
-  // === TAB 0: Launch Site ===
-  await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
-  await page.locator('#name_of_licensee').fill('SpaceX');
-  await page.locator('#call_sign').fill('SLI-001');
-  await page.locator('#name_of_launch_vehicle').fill('Falcon Heavy');
-  await page.locator('#city').fill('Cape Canaveral');
-  await page.locator('#state').selectOption({ label: 'Florida' });
-  await page.locator('#latitude').fill('28.3922');
-  await page.locator('#longitude').fill('80.6077');
-  await page.locator('#launch_datetime_primary').fill('2027-07-10T08:30');
-  await page.locator('#launch_datetime_backup').fill('2027-07-11T08:30');
-  await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page, 2027);
 
   await page.getByRole('button', { name: 'Frequencies' }).click();
 

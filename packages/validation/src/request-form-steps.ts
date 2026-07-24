@@ -10,7 +10,7 @@ import {
   FrequencyRange,
 } from './frequency-and-transmitted-bandwidth-schemas.js';
 
-function schemaKeys<T extends z.ZodRawShape>(
+function getSchemaFieldNames<T extends z.ZodRawShape>(
   schema: z.ZodObject<T> | z.ZodEffects<z.ZodObject<T>>
 ) {
   const objectSchema =
@@ -18,11 +18,6 @@ function schemaKeys<T extends z.ZodRawShape>(
   return Object.keys(objectSchema.shape) as Array<keyof T & string>;
 }
 
-/**
- * Shared validation metadata for the request wizard. UI labels and components
- * deliberately remain in the frontend, while field ownership and validation
- * live beside the schemas that define them.
- */
 export const requestWizardSteps = (
   ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
 ) => {
@@ -30,15 +25,15 @@ export const requestWizardSteps = (
 
   return {
     launchSite: {
-      fields: schemaKeys(launchSiteSchema),
+      fields: getSchemaFieldNames(launchSiteSchema),
       schema: launchSiteSchema,
     },
     frequencies: {
-      fields: schemaKeys(frequenciesSchema),
+      fields: getSchemaFieldNames(frequenciesSchema),
       schema: frequenciesSchema,
     },
     additionalInformation: {
-      fields: schemaKeys(additionalInfoSchema),
+      fields: getSchemaFieldNames(additionalInfoSchema),
       schema: additionalInfoSchema,
     },
   } as const;

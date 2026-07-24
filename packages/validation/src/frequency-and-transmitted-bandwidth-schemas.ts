@@ -43,44 +43,46 @@ const createFrequencyOnlySchema = (ranges: readonly FrequencyRange[]) =>
   });
 
 export const getFrequencyRangeError = (
-  freq: number,
-  bw: number,
+  centerFrequency: number,
+  bandwidth: number,
   ranges: readonly FrequencyRange[] = DEFAULT_FREQUENCY_RANGES
 ): string | null => {
   const allowedRangesText = formatFrequencyRanges(ranges);
 
-  const half = bw / 2;
-  const low = freq - half;
-  const high = freq + half;
+  const halfBandwidth = bandwidth / 2;
+  const lowerBound = centerFrequency - halfBandwidth;
+  const upperBound = centerFrequency + halfBandwidth;
 
-  const fits = ranges.some(
+  const fitsWithinOneRange = ranges.some(
     (range) =>
-      freq >= range.low &&
-      freq <= range.high &&
-      low >= range.low &&
-      high <= range.high
+      centerFrequency >= range.low &&
+      centerFrequency <= range.high &&
+      lowerBound >= range.low &&
+      upperBound <= range.high
   );
-  if (fits) return null;
+  if (fitsWithinOneRange) return null;
 
-  const lowOk = ranges.some((range) => low >= range.low && low <= range.high);
-  const highOk = ranges.some(
-    (range) => high >= range.low && high <= range.high
+  const lowerBoundIsAllowed = ranges.some(
+    (range) => lowerBound >= range.low && lowerBound <= range.high
+  );
+  const upperBoundIsAllowed = ranges.some(
+    (range) => upperBound >= range.low && upperBound <= range.high
   );
 
-  if (!lowOk && !highOk) {
-    return `Frequency minus half the bandwidth (${low.toFixed(
+  if (!lowerBoundIsAllowed && !upperBoundIsAllowed) {
+    return `Frequency minus half the bandwidth (${lowerBound.toFixed(
       2
-    )} MHz) and frequency plus half the bandwidth (${high.toFixed(
+    )} MHz) and frequency plus half the bandwidth (${upperBound.toFixed(
       2
     )} MHz) both fall outside the allowed bands: ${allowedRangesText}.`;
   }
-  if (!lowOk) {
-    return `Frequency minus half the bandwidth (${low.toFixed(
+  if (!lowerBoundIsAllowed) {
+    return `Frequency minus half the bandwidth (${lowerBound.toFixed(
       2
     )} MHz) falls outside the allowed bands: ${allowedRangesText}.`;
   }
-  if (!highOk) {
-    return `Frequency plus half the bandwidth (${high.toFixed(
+  if (!upperBoundIsAllowed) {
+    return `Frequency plus half the bandwidth (${upperBound.toFixed(
       2
     )} MHz) falls outside the allowed bands: ${allowedRangesText}.`;
   }
@@ -94,12 +96,21 @@ export const createFrequencyBandwidthCrossCheckSchema = (
   createFrequencyOnlySchema(ranges)
     .merge(transmittedBandwidthSchema)
     .superRefine((data, ctx) => {
-      const freq = data.frequency;
-      const bw = data.transmitted_bandwidth;
+      const centerFrequency = data.frequency;
+      const bandwidth = data.transmitted_bandwidth;
 
-      if (typeof freq !== 'number' || typeof bw !== 'number') return;
+      if (
+        typeof centerFrequency !== 'number' ||
+        typeof bandwidth !== 'number'
+      ) {
+        return;
+      }
 
-      const errorDetail = getFrequencyRangeError(freq, bw, ranges);
+      const errorDetail = getFrequencyRangeError(
+        centerFrequency,
+        bandwidth,
+        ranges
+      );
       if (errorDetail) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -113,7 +124,7 @@ export const createFrequencyBandwidthCrossCheckSchema = (
         });
       }
 
-      if (bw > 5 && !data.transmitted_bandwidth_justification) {
+      if (bandwidth > 5 && !data.transmitted_bandwidth_justification) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
@@ -122,4 +133,3 @@ export const createFrequencyBandwidthCrossCheckSchema = (
         });
       }
     });
-

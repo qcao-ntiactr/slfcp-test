@@ -1,6 +1,8 @@
 import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
+import { loginAndOpenRequestForm } from './utils';
+
 dotenv.config();
 
 const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
@@ -8,15 +10,7 @@ const loginUrl = `${baseUrl}${process.env.LOGIN_URL || '/'}`;
 const formUrl = `${baseUrl}${process.env.FORM_URL || '/create-request'}`;
 
 test('Launch Site tab with invalid values', async ({ page }) => {
-  // --- Login ---
-  await page.goto(loginUrl);
-  await page.getByLabel('Email Address').fill('commercial@qa.com');
-  await page.getByLabel('Password').fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
-
-  // --- Navigate to form through the application ---
-  await page.getByRole('button', { name: 'New Request', exact: true }).click();
-  await expect(page).toHaveURL(formUrl);
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
 
   // === TAB 0: Launch Site ===
   await page.locator('#mission_name').fill(''); // Empty

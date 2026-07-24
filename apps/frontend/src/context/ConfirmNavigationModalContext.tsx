@@ -14,8 +14,9 @@ interface ConfirmNavigationModalState {
   shouldConfirmBeforeNavigating: (route: string) => boolean;
 }
 
-export const ConfirmNavigationModalContext =
-  createContext<ConfirmNavigationModalState | undefined>(undefined);
+export const ConfirmNavigationModalContext = createContext<
+  ConfirmNavigationModalState | undefined
+>(undefined);
 
 export const useConfirmNavigationModal = () => {
   const context = useContext(ConfirmNavigationModalContext);
@@ -27,7 +28,7 @@ export const useConfirmNavigationModal = () => {
   return context;
 };
 
-interface ConfirmNavigationModalProviderProps {
+export interface ConfirmNavigationModalProviderProps {
   children: ReactNode;
 }
 
