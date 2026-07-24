@@ -229,6 +229,7 @@ describe('TabbedFormWizard', () => {
       'aria-selected',
       'true'
     );
+    expect(screen.getByRole('tab', { name: 'Frequencies' })).toBeDisabled();
   });
 
   it('blocks the next step and exposes a root-level schema error', async () => {

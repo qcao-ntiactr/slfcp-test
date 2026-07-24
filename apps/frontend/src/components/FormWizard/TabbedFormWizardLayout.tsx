@@ -65,6 +65,7 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
     errors,
     `root.wizardStepValidation.${activeStepConfig.id}.message`
   );
+  const activeStepHasErrors = stepHasErrors(errors, activeStepConfig);
   const validateActiveStep = useWizardStepValidation(activeStepConfig);
 
   handleStep(validateActiveStep);
@@ -101,6 +102,7 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
               }
               isDisabled={
                 navigationBlocked ||
+                (index > activeStep && activeStepHasErrors) ||
                 (index > activeStep + 1 && index > highestVisitedStep)
               }
             />
