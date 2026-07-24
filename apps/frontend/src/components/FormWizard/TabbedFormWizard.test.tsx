@@ -1,24 +1,223 @@
 /**
  * @vitest-environment jsdom
  */
+import { ChakraProvider } from '@chakra-ui/react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { FormEvent } from 'react';
+import { useState } from 'react';
+import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 
 import type { FormWizardStep } from './TabbedFormWizard.tsx';
-import { LockableWizardTestHarness } from './LockableWizardTestHarness.tsx';
-import {
-  LaunchContent,
-  nestedErrorWizardSteps,
-  rootErrorWizardSteps,
-  TabbedFormWizardTestHarness,
-  type TestFormValues,
-} from './TabbedFormWizardTestHarness.tsx';
+import { TabbedFormWizard } from './TabbedFormWizard.tsx';
+
+interface TestFormValues {
+  mission_name?: string;
+  optional?: string;
+  items?: { value?: string }[];
+}
+
+interface WizardTestFieldsProps {
+  section: 'launch' | 'frequency';
+}
+
+const WizardTestFields = ({ section }: WizardTestFieldsProps) => {
+  const {
+    formState: { errors },
+    register,
+  } = useFormContext<TestFormValues>();
+
+  if (section === 'launch') {
+    return (
+      <label>
+        Mission name
+        <input
+          {...register('mission_name')}
+          aria-invalid={Boolean(errors.mission_name)}
+        />
+      </label>
+    );
+  }
+
+  return (
+    <>
+      <label>
+        Optional value
+        <input
+          {...register('optional')}
+          aria-invalid={Boolean(errors.optional)}
+        />
+      </label>
+      <label>
+        Item value
+        <input
+          {...register('items.0.value')}
+          aria-invalid={Boolean(errors.items?.[0]?.value)}
+        />
+      </label>
+    </>
+  );
+};
+
+const requiredOptionalSchema = z.object({
+  optional: z.string().min(1, 'Required'),
+});
+
+const testWizardSteps: readonly FormWizardStep<TestFormValues>[] = [
+  {
+    id: 'launch',
+    title: 'Launch Site',
+    content: <WizardTestFields section="launch" />,
+    validation: {
+      fields: ['mission_name'],
+      schema: z.object({
+        mission_name: z.string().min(1, 'Required'),
+      }),
+    },
+  },
+  {
+    id: 'radio-details',
+    title: 'Frequencies',
+    content: <WizardTestFields section="frequency" />,
+    validation: {
+      fields: ['optional'],
+      schema: requiredOptionalSchema,
+    },
+  },
+  {
+    id: 'additional',
+    title: 'Additional Information',
+    content: <div>Additional content</div>,
+    validation: {
+      fields: ['optional'],
+      schema: requiredOptionalSchema,
+    },
+  },
+  {
+    id: 'summary',
+    title: 'Summary',
+    content: <div>Summary content</div>,
+  },
+];
+
+const nestedErrorWizardSteps: readonly FormWizardStep<TestFormValues>[] = [
+  testWizardSteps[0],
+  {
+    ...testWizardSteps[1],
+    validation: {
+      fields: ['optional', 'items'],
+      schema: z
+        .object({
+          optional: z.string().min(1, 'Required'),
+          items: z.array(z.object({ value: z.string().optional() })).optional(),
+        })
+        .superRefine((values, context) => {
+          if (values.items?.[0]?.value !== 'valid') {
+            context.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: 'Invalid item',
+              path: ['items', 0, 'value'],
+            });
+          }
+        }),
+    },
+  },
+  testWizardSteps[2],
+];
+
+const rootErrorWizardSteps: readonly FormWizardStep<TestFormValues>[] = [
+  {
+    id: 'launch',
+    title: 'Launch Site',
+    content: <WizardTestFields section="launch" />,
+    validation: {
+      fields: ['mission_name'],
+      schema: z
+        .object({ mission_name: z.string().optional() })
+        .refine(({ mission_name }) => mission_name === 'valid', {
+          message: 'The step values are incompatible.',
+        }),
+    },
+  },
+  testWizardSteps[1],
+];
+
+interface WizardTestHarnessProps {
+  canToggleNavigationLock?: boolean;
+  defaultValues?: TestFormValues;
+  isSubmitting?: boolean;
+  navigationBlocked?: boolean;
+  onCancel?: () => void;
+  onProgressChange?: (progress: {
+    activeStep: number;
+    highestVisitedStep: number;
+  }) => void;
+  onSubmit?: (values: TestFormValues) => void;
+  secondaryAction?: {
+    label: string;
+    onClick: () => void;
+    isVisible?: boolean;
+    isDisabled?: boolean;
+  };
+  submitLabel?: string;
+  wizardSteps?: readonly FormWizardStep<TestFormValues>[];
+}
+
+const WizardTestHarness = ({
+  canToggleNavigationLock = false,
+  defaultValues,
+  isSubmitting = false,
+  navigationBlocked = false,
+  onCancel = vi.fn(),
+  onProgressChange,
+  onSubmit = vi.fn(),
+  secondaryAction,
+  submitLabel,
+  wizardSteps = testWizardSteps,
+}: WizardTestHarnessProps) => {
+  const methods = useForm<TestFormValues>({ defaultValues });
+  const [navigationIsBlocked, setNavigationIsBlocked] =
+    useState(navigationBlocked);
+
+  return (
+    <ChakraProvider>
+      {canToggleNavigationLock && (
+        <button
+          type="button"
+          onClick={() => setNavigationIsBlocked((blocked) => !blocked)}
+        >
+          Toggle navigation lock
+        </button>
+      )}
+      <FormProvider {...methods}>
+        <form
+          onSubmit={(event: FormEvent<HTMLFormElement>) => {
+            event.preventDefault();
+            void methods.handleSubmit(onSubmit)(event);
+          }}
+        >
+          <TabbedFormWizard
+            headerText="Request"
+            steps={wizardSteps}
+            isSubmitting={isSubmitting}
+            navigationBlocked={navigationIsBlocked}
+            onCancel={onCancel}
+            onProgressChange={onProgressChange}
+            secondaryAction={secondaryAction}
+            submitLabel={submitLabel}
+          />
+        </form>
+      </FormProvider>
+    </ChakraProvider>
+  );
+};
 
 describe('TabbedFormWizard', () => {
   it('blocks the next step and exposes the schema error on a real field', async () => {
     const user = userEvent.setup();
-    render(<TabbedFormWizardTestHarness />);
+    render(<WizardTestHarness />);
 
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
 
@@ -34,7 +233,7 @@ describe('TabbedFormWizard', () => {
 
   it('blocks the next step and exposes a root-level schema error', async () => {
     const user = userEvent.setup();
-    render(<TabbedFormWizardTestHarness wizardSteps={rootErrorWizardSteps} />);
+    render(<WizardTestHarness wizardSteps={rootErrorWizardSteps} />);
 
     await user.type(screen.getByLabelText('Mission name'), 'invalid');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -55,7 +254,7 @@ describe('TabbedFormWizard', () => {
 
   it('advances with the next button after real input passes validation', async () => {
     const user = userEvent.setup();
-    render(<TabbedFormWizardTestHarness />);
+    render(<WizardTestHarness />);
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -64,7 +263,7 @@ describe('TabbedFormWizard', () => {
 
   it('advances with the immediately-next tab after real input passes validation', async () => {
     const user = userEvent.setup();
-    render(<TabbedFormWizardTestHarness />);
+    render(<WizardTestHarness />);
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('tab', { name: 'Frequencies' }));
@@ -73,7 +272,7 @@ describe('TabbedFormWizard', () => {
 
   it('allows backward navigation even after the current step becomes invalid', async () => {
     const user = userEvent.setup();
-    render(<TabbedFormWizardTestHarness />);
+    render(<WizardTestHarness />);
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -90,7 +289,7 @@ describe('TabbedFormWizard', () => {
 
   it('allows a validated jump to a previously visited future step', async () => {
     const user = userEvent.setup();
-    render(<TabbedFormWizardTestHarness />);
+    render(<WizardTestHarness />);
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -110,7 +309,12 @@ describe('TabbedFormWizard', () => {
   it('blocks tabs, back, next, and secondary actions while navigation is locked', async () => {
     const user = userEvent.setup();
     const onSecondary = vi.fn();
-    render(<LockableWizardTestHarness onSecondary={onSecondary} />);
+    render(
+      <WizardTestHarness
+        canToggleNavigationLock
+        secondaryAction={{ label: 'Save Draft', onClick: onSecondary }}
+      />
+    );
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -129,9 +333,7 @@ describe('TabbedFormWizard', () => {
 
   it('marks and clears a nested error using generic field ownership', async () => {
     const user = userEvent.setup();
-    render(
-      <TabbedFormWizardTestHarness wizardSteps={nestedErrorWizardSteps} />
-    );
+    render(<WizardTestHarness wizardSteps={nestedErrorWizardSteps} />);
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -164,7 +366,7 @@ describe('TabbedFormWizard', () => {
   it('reports active and highest-visited progress', async () => {
     const user = userEvent.setup();
     const onProgressChange = vi.fn();
-    render(<TabbedFormWizardTestHarness onProgressChange={onProgressChange} />);
+    render(<WizardTestHarness onProgressChange={onProgressChange} />);
 
     await user.type(screen.getByLabelText('Mission name'), 'Artemis');
     await user.click(screen.getByRole('button', { name: 'Frequencies' }));
@@ -185,7 +387,7 @@ describe('TabbedFormWizard', () => {
     const onCancel = vi.fn();
     const onSecondary = vi.fn();
     const { rerender } = render(
-      <TabbedFormWizardTestHarness
+      <WizardTestHarness
         onCancel={onCancel}
         secondaryAction={{ label: 'Save Draft', onClick: onSecondary }}
       />
@@ -197,7 +399,7 @@ describe('TabbedFormWizard', () => {
     expect(onSecondary).toHaveBeenCalledOnce();
 
     rerender(
-      <TabbedFormWizardTestHarness
+      <WizardTestHarness
         secondaryAction={{
           label: 'Save Draft',
           onClick: onSecondary,
@@ -210,7 +412,7 @@ describe('TabbedFormWizard', () => {
     ).not.toBeInTheDocument();
 
     rerender(
-      <TabbedFormWizardTestHarness
+      <WizardTestHarness
         secondaryAction={{
           label: 'Save Draft',
           onClick: onSecondary,
@@ -230,11 +432,11 @@ describe('TabbedFormWizard', () => {
       {
         id: 'only-step',
         title: 'Only Step',
-        content: <LaunchContent />,
+        content: <WizardTestFields section="launch" />,
       },
     ];
     const { rerender } = render(
-      <TabbedFormWizardTestHarness
+      <WizardTestHarness
         wizardSteps={oneStep}
         onSubmit={onSubmit}
         submitLabel="Finish"
@@ -246,9 +448,7 @@ describe('TabbedFormWizard', () => {
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce());
     expect(onSubmit.mock.calls[0][0]).toEqual({ mission_name: 'Artemis' });
 
-    rerender(
-      <TabbedFormWizardTestHarness wizardSteps={oneStep} isSubmitting={true} />
-    );
+    rerender(<WizardTestHarness wizardSteps={oneStep} isSubmitting={true} />);
     expect(
       screen.getByRole('button', { name: 'Submitting...' })
     ).toBeDisabled();

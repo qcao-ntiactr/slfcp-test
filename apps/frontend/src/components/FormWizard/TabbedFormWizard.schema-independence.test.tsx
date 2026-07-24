@@ -4,7 +4,7 @@
 import { ChakraProvider } from '@chakra-ui/react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { FormProvider, useForm, useFormContext } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import { describe, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -16,23 +16,15 @@ interface SurveyValues {
   consent?: string;
 }
 
-const SurveyProfile = () => {
-  const { register } = useFormContext<SurveyValues>();
-  return <input aria-label="Survey name" {...register('profile.name')} />;
-};
-
-const SurveyConsent = () => {
-  const { register } = useFormContext<SurveyValues>();
-  return <input aria-label="Consent" {...register('consent')} />;
-};
-
 const SurveyWizard = () => {
   const methods = useForm<SurveyValues>();
   const steps: readonly FormWizardStep<SurveyValues>[] = [
     {
       id: 'profile',
       title: 'Profile',
-      content: <SurveyProfile />,
+      content: (
+        <input aria-label="Survey name" {...methods.register('profile.name')} />
+      ),
       validation: {
         fields: ['profile'],
         schema: z.object({
@@ -43,7 +35,7 @@ const SurveyWizard = () => {
     {
       id: 'consent',
       title: 'Consent',
-      content: <SurveyConsent />,
+      content: <input aria-label="Consent" {...methods.register('consent')} />,
       validation: {
         fields: ['consent'],
         schema: z.object({ consent: z.literal('yes') }),
