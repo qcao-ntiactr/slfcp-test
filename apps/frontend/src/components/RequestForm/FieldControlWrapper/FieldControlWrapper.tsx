@@ -11,6 +11,7 @@ import {
   ControllerRenderProps,
   get,
   useFormContext,
+  useFormState,
 } from 'react-hook-form';
 
 import { FieldControlT } from '../Inputs/TextInput/TextInputT';
@@ -37,11 +38,10 @@ export const FieldControlWrapper = ({
 }: FieldControlWrapperProps) => {
   const {
     control,
-    clearErrors,
-    formState: { errors },
     getValues,
     trigger,
   } = useFormContext();
+  const { errors } = useFormState({ control });
 
   const id = isReadOnly ? `${fieldName}_readonly` : fieldName;
 
@@ -73,12 +73,7 @@ export const FieldControlWrapper = ({
                 ...field,
                 id,
                 onChange: (e) => {
-                  clearErrors(fieldName);
                   field.onChange(e); // Dynamic validation triggering based on field type
-                  setTimeout(() => {
-                    void trigger(fieldName);
-                  }, 0);
-
                   if (fieldName.startsWith('receivers.')) {
                     setTimeout(() => {
                       // Get current form values to determine how many receivers exist

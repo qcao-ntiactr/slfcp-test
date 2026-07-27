@@ -66,6 +66,25 @@ const Harness = ({
 };
 
 describe('FrequenciesTab editor persistence', () => {
+  it('revalidates the frequency value on every change', async () => {
+    render(<Harness />);
+
+    const frequencyInput = await screen.findByLabelText('Frequency Value');
+    fireEvent.change(frequencyInput, { target: { value: '500' } });
+
+    expect(
+      await screen.findByText(/Frequency must be within the following ranges/)
+    ).toBeVisible();
+
+    fireEvent.change(frequencyInput, { target: { value: '2050' } });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Frequency must be within the following ranges/)
+      ).not.toBeInTheDocument()
+    );
+  });
+
   it('shows bandwidth justification in a newly opened frequency editor', async () => {
     render(<Harness numberOfFrequencies={0} />);
 

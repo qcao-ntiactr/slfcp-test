@@ -154,3 +154,28 @@ test('keeps forward navigation disabled after returning to an untouched invalid 
     'true'
   );
 });
+
+test('revalidates the frequency value while the user types', async ({
+  page,
+}) => {
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page, 2027);
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+
+  await page.getByLabel('Number Of Frequencies').fill('1');
+  const frequencyInput = page.locator('#frequency');
+  const frequencyField = frequencyInput.locator('..').locator('..');
+
+  await frequencyInput.pressSequentially('500');
+  await expect(frequencyInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(frequencyField).toContainText(
+    'Frequency must be within the following ranges'
+  );
+
+  await frequencyInput.selectText();
+  await frequencyInput.pressSequentially('2050');
+  await expect(frequencyInput).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(frequencyField).not.toContainText(
+    'Frequency must be within the following ranges'
+  );
+});
