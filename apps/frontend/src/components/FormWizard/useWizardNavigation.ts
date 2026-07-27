@@ -4,6 +4,7 @@ import { WizardStepValidationError } from './useWizardStepValidation.ts';
 
 interface UseWizardNavigationOptions {
   activeStep: number;
+  forwardNavigationBlocked: boolean;
   goToStep: (_step: number) => void;
   highestVisitedStep: number;
   navigationBlocked: boolean;
@@ -25,6 +26,7 @@ const runValidatedNavigation = async (
 
 export const useWizardNavigation = ({
   activeStep,
+  forwardNavigationBlocked,
   goToStep,
   highestVisitedStep,
   navigationBlocked,
@@ -32,11 +34,13 @@ export const useWizardNavigation = ({
   validateActiveStep,
 }: UseWizardNavigationOptions) => {
   const goForward = (_event?: MouseEvent<HTMLButtonElement>) => {
+    if (forwardNavigationBlocked) return;
     void runValidatedNavigation(nextStep);
   };
 
   const changeTab = (nextStepIndex: number) => {
     if (navigationBlocked || nextStepIndex === activeStep) return;
+    if (forwardNavigationBlocked && nextStepIndex > activeStep) return;
 
     if (nextStepIndex < activeStep) {
       goToStep(nextStepIndex);

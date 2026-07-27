@@ -1,5 +1,5 @@
 import { Button, Flex } from '@chakra-ui/react';
-import { useFormContext } from 'react-hook-form';
+import { useFormContext, useFormState } from 'react-hook-form';
 import { isEmpty } from 'lodash';
 
 export interface FrequencyFormButtonsProps {
@@ -12,7 +12,8 @@ export const FrequencyFormButtons = ({
   onSubmit,
   onCancel,
 }: FrequencyFormButtonsProps) => {
-  const { formState } = useFormContext();
+  const { control } = useFormContext();
+  const { errors } = useFormState({ control });
 
   if (!isEditingFrequency) {
     return (
@@ -27,7 +28,7 @@ export const FrequencyFormButtons = ({
           e.stopPropagation();
           onSubmit();
         }}
-        isDisabled={!isEmpty(formState.errors)}
+        isDisabled={!isEmpty(errors)}
       >
         Add Frequency
       </Button>
@@ -45,7 +46,7 @@ export const FrequencyFormButtons = ({
           e.stopPropagation();
           onSubmit();
         }}
-        isDisabled={!isEmpty(formState.errors)}
+        isDisabled={!isEmpty(errors)}
       >
         Save Changes
       </Button>

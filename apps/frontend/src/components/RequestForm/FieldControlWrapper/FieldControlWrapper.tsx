@@ -37,6 +37,7 @@ export const FieldControlWrapper = ({
 }: FieldControlWrapperProps) => {
   const {
     control,
+    clearErrors,
     formState: { errors },
     getValues,
     trigger,
@@ -72,7 +73,12 @@ export const FieldControlWrapper = ({
                 ...field,
                 id,
                 onChange: (e) => {
+                  clearErrors(fieldName);
                   field.onChange(e); // Dynamic validation triggering based on field type
+                  setTimeout(() => {
+                    void trigger(fieldName);
+                  }, 0);
+
                   if (fieldName.startsWith('receivers.')) {
                     setTimeout(() => {
                       // Get current form values to determine how many receivers exist

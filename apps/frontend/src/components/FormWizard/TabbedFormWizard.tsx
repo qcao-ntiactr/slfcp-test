@@ -34,6 +34,7 @@ export interface TabbedFormWizardProps<TValues extends FieldValues> {
   steps: readonly FormWizardStep<TValues>[];
   isSubmitting: boolean;
   onCancel: () => void;
+  forwardNavigationBlocked?: boolean;
   navigationBlocked?: boolean;
   onProgressChange?: (_progress: FormWizardProgress) => void;
   secondaryAction?: SecondaryAction;

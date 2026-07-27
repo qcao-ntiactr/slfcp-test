@@ -6,6 +6,7 @@ import {
   Dispatch,
   PropsWithChildren,
   SetStateAction,
+  useEffect,
 } from 'react';
 import { FrequencyFormDefaults } from '@slfcp/validation';
 
@@ -25,12 +26,14 @@ const CollapseWithChildren = Collapse as unknown as ComponentType<
 export interface FrequenciesTabProps {
   frequencyFormMethods: UseFormReturn<FrequencyFormDefaults>;
   isEditingFrequency: boolean;
+  onEditorVisibilityChange: (_isVisible: boolean) => void;
   setIsEditingFrequency: Dispatch<SetStateAction<boolean>>;
 }
 
 export const FrequenciesTab = ({
   frequencyFormMethods,
   isEditingFrequency,
+  onEditorVisibilityChange,
   setIsEditingFrequency,
 }: FrequenciesTabProps) => {
   const {
@@ -51,6 +54,10 @@ export const FrequenciesTab = ({
     isEditingFrequency,
     setIsEditingFrequency,
   });
+
+  useEffect(() => {
+    onEditorVisibilityChange(editorIsVisible);
+  }, [editorIsVisible, onEditorVisibilityChange]);
 
   return (
     <Box className="tab-container">

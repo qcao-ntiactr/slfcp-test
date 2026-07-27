@@ -26,9 +26,16 @@ import { FrequenciesTab } from './FrequenciesTab';
 
 afterEach(cleanup);
 
-const Harness = () => {
+const Harness = ({
+  numberOfFrequencies = 1,
+}: {
+  numberOfFrequencies?: number;
+}) => {
   const requestMethods = useForm<PortalFormDefaults>({
-    defaultValues: { number_of_frequencies: 1, frequencies: [] },
+    defaultValues: {
+      number_of_frequencies: numberOfFrequencies,
+      frequencies: [],
+    },
   });
   const frequencyFormMethods = useForm<FrequencyFormDefaults>({
     resolver: zodResolver(frequencyFormSchema),
@@ -36,6 +43,7 @@ const Harness = () => {
     mode: 'onChange',
   });
   const [showStep, setShowStep] = useState(true);
+  const [, setEditorIsVisible] = useState(false);
   const [isEditingFrequency, setIsEditingFrequency] = useState(false);
 
   return (
@@ -48,6 +56,7 @@ const Harness = () => {
           <FrequenciesTab
             frequencyFormMethods={frequencyFormMethods}
             isEditingFrequency={isEditingFrequency}
+            onEditorVisibilityChange={setEditorIsVisible}
             setIsEditingFrequency={setIsEditingFrequency}
           />
         )}
@@ -57,6 +66,25 @@ const Harness = () => {
 };
 
 describe('FrequenciesTab editor persistence', () => {
+  it('shows bandwidth justification in a newly opened frequency editor', async () => {
+    render(<Harness numberOfFrequencies={0} />);
+
+    fireEvent.change(screen.getByLabelText('Number Of Frequencies'), {
+      target: { value: '1' },
+    });
+
+    const transmittedBandwidth = await screen.findByLabelText(
+      'Transmitted Bandwidth'
+    );
+    fireEvent.change(transmittedBandwidth, { target: { value: '6' } });
+    fireEvent.blur(transmittedBandwidth);
+    fireEvent.click(screen.getByText('Signal is Filtered'));
+
+    expect(
+      await screen.findByLabelText('Bandwidth Justification')
+    ).toBeVisible();
+  });
+
   it('retains an unfinished frequency when the wizard step is remounted', async () => {
     render(<Harness />);
 

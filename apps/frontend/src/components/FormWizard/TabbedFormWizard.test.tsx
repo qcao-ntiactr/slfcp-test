@@ -147,6 +147,7 @@ const rootErrorWizardSteps: readonly FormWizardStep<TestFormValues>[] = [
 interface WizardTestHarnessProps {
   canToggleNavigationLock?: boolean;
   defaultValues?: TestFormValues;
+  forwardNavigationBlocked?: boolean;
   isSubmitting?: boolean;
   navigationBlocked?: boolean;
   onCancel?: () => void;
@@ -168,6 +169,7 @@ interface WizardTestHarnessProps {
 const WizardTestHarness = ({
   canToggleNavigationLock = false,
   defaultValues,
+  forwardNavigationBlocked = false,
   isSubmitting = false,
   navigationBlocked = false,
   onCancel = vi.fn(),
@@ -202,6 +204,7 @@ const WizardTestHarness = ({
             headerText="Request"
             steps={wizardSteps}
             isSubmitting={isSubmitting}
+            forwardNavigationBlocked={forwardNavigationBlocked}
             navigationBlocked={navigationIsBlocked}
             onCancel={onCancel}
             onProgressChange={onProgressChange}
@@ -330,6 +333,24 @@ describe('TabbedFormWizard', () => {
     expect(screen.getByRole('button', { name: 'Save Draft' })).toBeDisabled();
     screen.getAllByRole('tab').forEach((tab) => expect(tab).toBeDisabled());
     expect(onSecondary).not.toHaveBeenCalled();
+  });
+
+  it('blocks only forward navigation when the active step has unfinished work', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<WizardTestHarness />);
+
+    await user.type(screen.getByLabelText('Mission name'), 'Artemis');
+    await user.click(screen.getByRole('button', { name: 'Frequencies' }));
+
+    rerender(<WizardTestHarness forwardNavigationBlocked />);
+
+    expect(screen.getByRole('button', { name: 'Back' })).toBeEnabled();
+    expect(
+      screen.getByRole('tab', { name: 'Additional Information' })
+    ).toBeDisabled();
+    expect(
+      screen.getByRole('button', { name: 'Additional Information' })
+    ).toBeDisabled();
   });
 
   it('marks and clears a nested error using generic field ownership', async () => {

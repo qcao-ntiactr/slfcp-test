@@ -37,6 +37,7 @@ const stepHasErrors = <TValues extends FieldValues>(
 
 export const TabbedFormWizardLayout = <TValues extends FieldValues>({
   children,
+  forwardNavigationBlocked = false,
   headerText,
   highestVisitedStep,
   isSubmitting,
@@ -66,12 +67,15 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
     `root.wizardStepValidation.${activeStepConfig.id}.message`
   );
   const activeStepHasErrors = stepHasErrors(errors, activeStepConfig);
+  const activeStepCannotAdvance =
+    activeStepHasErrors || forwardNavigationBlocked;
   const validateActiveStep = useWizardStepValidation(activeStepConfig);
 
   handleStep(validateActiveStep);
 
   const { changeTab, goForward } = useWizardNavigation({
     activeStep,
+    forwardNavigationBlocked,
     goToStep,
     highestVisitedStep,
     navigationBlocked,
@@ -102,7 +106,7 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
               }
               isDisabled={
                 navigationBlocked ||
-                (index > activeStep && activeStepHasErrors) ||
+                (index > activeStep && activeStepCannotAdvance) ||
                 (index > activeStep + 1 && index > highestVisitedStep)
               }
             />
@@ -150,7 +154,9 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
             <Button
               type="button"
               className="forward-submit-btn"
-              disabled={navigationBlocked || isLoading}
+              disabled={
+                navigationBlocked || forwardNavigationBlocked || isLoading
+              }
               onClick={goForward}
               w="2xs"
               backgroundColor="#4a5568"

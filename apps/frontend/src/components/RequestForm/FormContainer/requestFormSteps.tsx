@@ -22,6 +22,7 @@ export const REQUEST_FORM_STEP_INDEX = {
 interface CreateRequestFormStepsOptions {
   frequencyFormMethods: UseFormReturn<FrequencyFormDefaults>;
   isEditingFrequency: boolean;
+  onFrequencyEditorVisibilityChange: (_isVisible: boolean) => void;
   setIsEditingFrequency: Dispatch<SetStateAction<boolean>>;
   validation: ReturnType<typeof requestWizardSteps>;
 }
@@ -29,6 +30,7 @@ interface CreateRequestFormStepsOptions {
 export const createRequestFormSteps = ({
   frequencyFormMethods,
   isEditingFrequency,
+  onFrequencyEditorVisibilityChange,
   setIsEditingFrequency,
   validation,
 }: CreateRequestFormStepsOptions): readonly FormWizardStep<PortalFormDefaults>[] => [
@@ -46,6 +48,7 @@ export const createRequestFormSteps = ({
       <FrequenciesTab
         frequencyFormMethods={frequencyFormMethods}
         isEditingFrequency={isEditingFrequency}
+        onEditorVisibilityChange={onFrequencyEditorVisibilityChange}
         setIsEditingFrequency={setIsEditingFrequency}
       />
     ),

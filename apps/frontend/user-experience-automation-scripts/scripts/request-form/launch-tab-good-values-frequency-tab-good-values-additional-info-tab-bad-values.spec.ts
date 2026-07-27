@@ -33,7 +33,11 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
   for (let i = 0; i < numFrequencies; i++) {
     await fillValidFrequency(page, 2027);
 
-    await page.getByRole('button', { name: /Add Frequency/i }).click();
+    const addFrequencyButton = page.getByRole('button', {
+      name: /Add Frequency/i,
+    });
+    await expect(addFrequencyButton).toBeEnabled();
+    await addFrequencyButton.click();
     const frequencyLabel = numFrequencies === 1 ? 'frequency' : 'frequencies';
     await expect(
       page.getByRole('heading', {
@@ -76,12 +80,12 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
   await page.locator('#alternate_poc_email').fill('EmailWithoutProvider');
   await page.locator('#alternate_poc_phone').fill('555123123');
 
-  await page.getByRole('tab', { name: 'Summary' }).click();
+  await expect(page.getByRole('tab', { name: 'Summary' })).toBeDisabled();
 
   await expect(
     page.getByRole('tab', { name: 'Additional Information' })
   ).toHaveAttribute('aria-selected', 'true');
   await expect(
-    page.locator('#ground_track_from_liftoff_until_payload_separation')
+    page.locator('#primary_poc_name')
   ).toHaveAttribute('aria-invalid', 'true');
 });

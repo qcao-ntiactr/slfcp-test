@@ -123,6 +123,34 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
 
   await page.getByRole('tab', { name: 'Frequencies' }).click();
   await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeDisabled();
+  await expect(
     page.locator('#receivers\\.0\\.longitude_of_receiving_antenna')
   ).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('keeps forward navigation disabled after returning to an untouched invalid frequency form', async ({
+  page,
+}) => {
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page, 2027);
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+
+  await page.getByLabel('Number Of Frequencies').fill('1');
+  await expect(page.locator('#frequency')).toHaveAttribute(
+    'aria-invalid',
+    'true'
+  );
+
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeDisabled();
+  await expect(page.locator('#frequency')).toHaveAttribute(
+    'aria-invalid',
+    'true'
+  );
 });

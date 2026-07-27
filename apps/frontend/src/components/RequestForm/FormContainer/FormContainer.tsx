@@ -65,6 +65,8 @@ export const FormContainer = ({
   const [activeStep, setActiveStep] = useState(0);
   const [highestVisitedStep, setHighestVisitedStep] = useState(0);
 
+  const [frequencyEditorIsVisible, setFrequencyEditorIsVisible] =
+    useState(false);
   const [isEditingFrequency, setIsEditingFrequency] = useState(false);
 
   const { getValues, handleSubmit, trigger, control, reset } = methods;
@@ -125,6 +127,7 @@ export const FormContainer = ({
       createRequestFormSteps({
         frequencyFormMethods,
         isEditingFrequency,
+        onFrequencyEditorVisibilityChange: setFrequencyEditorIsVisible,
         setIsEditingFrequency,
         validation: requestStepValidation,
       }),
@@ -142,6 +145,10 @@ export const FormContainer = ({
           headerText={headerText}
           steps={requestFormSteps}
           isSubmitting={isLoading}
+          forwardNavigationBlocked={
+            activeStep === REQUEST_FORM_STEP_INDEX.frequencies &&
+            frequencyEditorIsVisible
+          }
           navigationBlocked={isEditingFrequency}
           onCancel={handleCancelButtonClick}
           onProgressChange={({
