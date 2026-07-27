@@ -76,10 +76,9 @@ export const FrequencyForm = ({
   }, [receiversIsDirty, trigger]);
 
   useEffect(() => {
-    reset(initialValues);
     setShowReceiver2(initialValues?.receivers?.length > 1);
     void trigger();
-  }, [initialValues]);
+  }, [initialValues, trigger]);
 
   const clearReceiver2ValidationState = () => {
     clearErrors([...receiver2FieldNames, 'receivers']);

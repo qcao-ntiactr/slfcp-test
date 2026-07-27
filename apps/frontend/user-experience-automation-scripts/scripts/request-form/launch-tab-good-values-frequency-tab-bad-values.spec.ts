@@ -114,4 +114,15 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
     page.locator('#receivers\\.0\\.longitude_of_receiving_antenna')
   ).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#frequency')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('tab', { name: 'Launch Site' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+  await expect(
+    page.locator('#receivers\\.0\\.longitude_of_receiving_antenna')
+  ).toHaveAttribute('aria-invalid', 'true');
 });

@@ -69,4 +69,23 @@ describe('FrequenciesTab editor persistence', () => {
       expect(screen.getByLabelText('Frequency Value')).toHaveValue(2050)
     );
   });
+
+  it('retains frequency validation errors when the wizard step is remounted', async () => {
+    render(<Harness />);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Frequency Value')).toHaveAttribute(
+        'aria-invalid',
+        'true'
+      )
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle step' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle step' }));
+
+    expect(screen.getByLabelText('Frequency Value')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    );
+  });
 });
