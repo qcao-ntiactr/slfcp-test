@@ -19,7 +19,7 @@ services:
       retries: 20
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
+    image: mcr.microsoft.com/azure-storage/azurite:3.36.0
     container_name: slfcp-azurite
     environment:
       AZURITE_ACCOUNTS: slfcpdev:MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5YWJjZGVmMDEyMzQ1Njc4OWFiY2RlZg==
@@ -35,6 +35,7 @@ services:
       - /data
       - --debug
       - /data/debug.log
+      - --skipApiVersionCheck
     ports:
       - "10000:10000"
       - "10001:10001"
