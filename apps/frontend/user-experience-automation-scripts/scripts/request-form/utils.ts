@@ -1,28 +1,13 @@
-import { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 export const getValidFrequencyAndBandwidth = () => {
-  const ranges = [
-    { min: 2025, max: 2110 },
-    { min: 2200, max: 2290 },
-    { min: 2360, max: 2395 },
-  ];
-
-  const transmittedBandwidth = +(Math.random() * (10 - 0.1) + 0.1).toFixed(2); // between 0.1 and 10
-  const halfBw = transmittedBandwidth / 2;
-
-  const range = ranges[Math.floor(Math.random() * ranges.length)];
-  const freqMin = range.min + halfBw;
-  const freqMax = range.max - halfBw;
-
-  const frequency = +(Math.random() * (freqMax - freqMin) + freqMin).toFixed(2);
-
-  return { frequency, transmittedBandwidth };
+  return {
+    frequency: 2050,
+    transmittedBandwidth: 6,
+  };
 };
 
-/**
- * Helper function to fill receiver fields using multiple selector strategies
- * for compatibility with both old and new receiver structures
- */
 export const fillReceiverField = async (
   page: Page,
   receiverIndex: number,
@@ -31,86 +16,121 @@ export const fillReceiverField = async (
   options?: { selectOption?: boolean; click?: boolean }
 ) => {
   const { selectOption = false, click = false } = options || {};
+  const element =
+    fieldName === 'antenna_altitude_unit'
+      ? page.locator(
+          `#receivers\\.${receiverIndex}\\.antenna_altitude + [aria-label^="Change the altitude unit"]`
+        )
+      : page.locator(`#receivers\\.${receiverIndex}\\.${fieldName}`);
+  await expect(element).toBeVisible();
 
-  // Multiple selector strategies for robustness
-  const selectors = [
-    // Deterministic IDs
-    `#receivers\\.${receiverIndex}\\.${fieldName}`,
-    // New receiver array structure
-    `input[name="receivers.${receiverIndex}.${fieldName}"]`,
-    `select[name="receivers.${receiverIndex}.${fieldName}"]`,
-    `button[name="receivers.${receiverIndex}.${fieldName}"]`,
-    // Fallback to data-testid or class-based selectors
-    `[data-testid="receiver-${receiverIndex}"] input[name*="${fieldName}"]`,
-    `[data-testid="receiver-${receiverIndex}"] select[name*="${fieldName}"]`,
-    `[data-testid="receiver-${receiverIndex}"] button[name*="${fieldName}"]`,
-    `.receiver-section:nth-child(${receiverIndex + 1}) input[name*="${fieldName}"]`,
-    `.receiver-section:nth-child(${receiverIndex + 1}) select[name*="${fieldName}"]`,
-    `.receiver-section:nth-child(${receiverIndex + 1}) button[name*="${fieldName}"]`,
-  ];
-
-  // Try each selector until one works
-  for (const selector of selectors) {
-    try {
-      const element = page.locator(selector).first();
-      const isVisible = await element.isVisible({ timeout: 1000 });
-
-      if (isVisible) {
-        if (click) {
-          await element.click();
-        } else if (selectOption) {
-          await element.selectOption({ label: value });
-        } else {
-          await element.fill(value);
-        }
-        return; // Success, exit function
-      }
-      //eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    } catch (error) {
-      // Continue to next selector
-      continue;
-    }
+  if (click) {
+    await element.click();
+  } else if (selectOption) {
+    await element.selectOption({ label: value });
+  } else {
+    await element.fill(value);
   }
+};
 
-  // Fallback to label-based selectors (less reliable but covers edge cases)
-  const labelMappings: Record<string, string> = {
-    transmission_start: 'Transmission Start',
-    transmission_end: 'Transmission End',
-    antenna_type: 'Antenna Type',
-    antenna_gain: 'Antenna Gain',
-    antenna_beamwidth: 'Antenna Beamwidth',
-    antenna_altitude: 'Antenna Altitude',
-    antenna_altitude_unit: 'Change the altitude unit',
-    location_of_receiving_ground_station:
-      'Location of Receiving Ground Station',
-    latitude_of_receiving_antenna: 'Latitude of Receiving Antenna',
-    longitude_of_receiving_antenna: 'Longitude of Receiving Antenna',
-  };
+export const loginAndOpenRequestForm = async (
+  page: Page,
+  loginUrl: string,
+  formUrl: string
+) => {
+  await page.goto(loginUrl);
+  await page.getByLabel('Email Address').fill('commercial@qa.com');
+  await page.getByLabel('Password').fill('password123');
+  await page.getByRole('button', { name: 'Sign In' }).click();
+  await page.getByRole('button', { name: 'New Request', exact: true }).click();
+  await expect(page).toHaveURL(formUrl);
+};
 
-  const labelText = labelMappings[fieldName];
-  if (labelText) {
-    try {
-      const labelElement = page
-        .getByLabel(new RegExp(labelText))
-        .nth(receiverIndex + 1); // +1 because TX is index 0
+export const fillValidLaunchSite = async (page: Page, year = 2030) => {
+  await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
+  await page.locator('#name_of_licensee').fill('SpaceX');
+  await page.locator('#call_sign').fill('SLI-001');
+  await page.locator('#name_of_launch_vehicle').fill('Falcon Heavy');
+  await page.locator('#city').fill('Cape Canaveral');
+  await page.locator('#state').selectOption({ label: 'Florida' });
+  await page.locator('#latitude').fill('28.3922');
+  await page.locator('#longitude').fill('80.6077');
+  await page.locator('#launch_datetime_primary').fill(`${year}-07-10T08:30`);
+  await page.locator('#launch_datetime_backup').fill(`${year}-07-11T08:30`);
+  await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
+};
 
-      if (click) {
-        await labelElement.click();
-      } else if (selectOption) {
-        await labelElement.selectOption({ label: value });
-      } else {
-        await labelElement.fill(value);
-      }
-      return;
-    } catch (error) {
-      console.warn(
-        `Failed to fill receiver field ${fieldName} for receiver ${receiverIndex}:`,
-        error
-      );
-    }
-  }
+export const fillValidFrequency = async (page: Page, year = 2030) => {
+  const { frequency, transmittedBandwidth } = getValidFrequencyAndBandwidth();
+  const gain = '12.5';
+  const beamwidth = '45';
 
-  throw new Error(
-    `Could not find receiver field ${fieldName} for receiver ${receiverIndex}`
+  await page.locator('#frequency').fill(frequency.toString());
+  await page
+    .locator('#location_of_transmitter_on_vehicle_or_platform')
+    .selectOption({ label: 'First Stage' });
+  await page.locator('#eirp').fill('100');
+  await page.getByLabel(/Change the EIRP unit/).click();
+  const bandwidthField = page.locator('#transmitted_bandwidth');
+  await bandwidthField.fill(transmittedBandwidth.toString());
+  await bandwidthField.press('Tab');
+  await page
+    .locator('#transmitted_bandwidth_is_signal_filtered')
+    .getByText('Signal is Filtered')
+    .click();
+  const bandwidthJustification = page.locator(
+    '#transmitted_bandwidth_justification'
+  );
+  await expect(bandwidthJustification).toBeVisible();
+  await bandwidthJustification.fill('High data rate required');
+  await page.locator('#minus_3db_bandwidth').fill('3');
+  await page
+    .locator('#minus_3db_bandwidth_before_or_after_filtering')
+    .getByText('Before Filtering')
+    .click();
+  await page.locator('#minus_20db_bandwidth').fill('10');
+  await page
+    .locator('#minus_20db_bandwidth_before_or_after_filtering')
+    .getByText('After Filtering')
+    .click();
+  await page.locator('#minus_60db_bandwidth').fill('20');
+  await page
+    .locator('#minus_60db_bandwidth_before_or_after_filtering')
+    .getByText('After Filtering')
+    .click();
+  await page.locator('#nature_of_modulating_signals').fill('Digital');
+  await page.locator('#emission_designator').fill('16K0F3E');
+  await page.locator('#tx_transmission_start').fill(`${year}-07-01T08:00`);
+  await page.locator('#tx_transmission_end').fill(`${year}-07-01T09:00`);
+  await page.locator('#tx_antenna_type').fill('Patch Antenna');
+  await page.locator('#tx_antenna_gain').fill(gain);
+  await page.locator('#tx_antenna_beamwidth').fill(beamwidth);
+  await page.locator('#tx_antenna_altitude').fill('100');
+  await page
+    .locator('#tx_antenna_altitude + [aria-label^="Change the altitude unit"]')
+    .click();
+
+  await fillReceiverField(page, 0, 'transmission_start', `${year}-07-01T08:00`);
+  await fillReceiverField(page, 0, 'transmission_end', `${year}-07-01T09:00`);
+  await fillReceiverField(page, 0, 'antenna_type', 'Dish Antenna');
+  await fillReceiverField(page, 0, 'antenna_gain', gain);
+  await fillReceiverField(page, 0, 'antenna_beamwidth', beamwidth);
+  await fillReceiverField(page, 0, 'antenna_altitude', '100');
+  await fillReceiverField(page, 0, 'antenna_altitude_unit', '', {
+    click: true,
+  });
+  await fillReceiverField(
+    page,
+    0,
+    'location_of_receiving_ground_station',
+    'Ground',
+    { selectOption: true }
+  );
+  await fillReceiverField(page, 0, 'latitude_of_receiving_antenna', '10.1234');
+  await fillReceiverField(
+    page,
+    0,
+    'longitude_of_receiving_antenna',
+    '-70.5678'
   );
 };

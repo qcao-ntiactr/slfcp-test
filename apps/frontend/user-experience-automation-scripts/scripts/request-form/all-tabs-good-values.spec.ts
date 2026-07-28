@@ -1,9 +1,13 @@
 import path from 'path';
 
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
-import { getValidFrequencyAndBandwidth, fillReceiverField } from './utils';
+import {
+  fillValidFrequency,
+  fillValidLaunchSite,
+  loginAndOpenRequestForm,
+} from './utils';
 
 dotenv.config();
 
@@ -15,157 +19,48 @@ const formUrl = `${baseUrl}${process.env.FORM_URL || '/create-request'}`;
 const numFrequencies = parseInt(process.env.NUM_FREQ || '1', 10);
 
 test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
-  // --- Login ---
-  await page.goto(loginUrl);
-  await page.getByLabel('Email Address').fill('commercial@qa.com');
-  await page.getByLabel('Password').fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page);
 
-  // --- Navigate to form ---
-  await page.goto(formUrl);
-
-  // === TAB 0: Launch Site ===
-  await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
-  await page.locator('#name_of_licensee').fill('SpaceX');
-  await page.locator('#call_sign').fill('SLI-001');
-  await page.locator('#name_of_launch_vehicle').fill('Falcon Heavy');
-  await page.locator('#city').fill('Cape Canaveral');
-  await page.locator('#state').selectOption({ label: 'Florida' });
-  await page.locator('#latitude').fill('28.3922');
-  await page.locator('#longitude').fill('80.6077');
-  await page.locator('#launch_datetime_primary').fill('2030-07-10T08:30');
-  await page.locator('#launch_datetime_backup').fill('2030-07-11T08:30');
-  await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
-
-  await page.locator('.forward-submit-btn').click(); // go to Frequencies tab
+  await page.getByRole('button', { name: 'Frequencies' }).click();
 
   // === TAB 1: Frequencies ===
   await page
     .getByLabel('Number Of Frequencies')
     .fill(numFrequencies.toString());
+  await expect(page.locator('#frequency')).toBeVisible();
 
   for (let i = 0; i < numFrequencies; i++) {
-    await page.waitForTimeout(200);
-
-    const { frequency, transmittedBandwidth } = getValidFrequencyAndBandwidth();
-
-    const eirp = (Math.random() * 999).toFixed(2);
-    const gain = (Math.random() * 99).toFixed(1);
-    const beamwidth = (Math.random() * 360 + 1).toFixed(1);
-    const shouldJustify = transmittedBandwidth > 5;
-    const locationOptions = ['First Stage', 'Second Stage', 'Ground'];
-    const locationOption =
-      locationOptions[Math.floor(Math.random() * locationOptions.length)];
-
-    await page.locator('#frequency').fill(frequency.toString());
-
-    await page
-      .locator('#location_of_transmitter_on_vehicle_or_platform')
-      .selectOption({
-        label: Math.random() < 0.5 ? 'First Stage' : 'Second Stage',
-      });
-
-    await page.locator('#eirp').fill(eirp);
-    await page.getByLabel(/Change the EIRP unit/).click();
-
-    const bandwidthField = page.locator('#transmitted_bandwidth');
-    await bandwidthField.fill(transmittedBandwidth.toString());
-    await bandwidthField.press('Tab');
-
-    await page
-      .locator('#transmitted_bandwidth_is_signal_filtered')
-      .getByText(
-        Math.random() < 0.5 ? 'Signal is Filtered' : 'Signal is Not Filtered'
-      )
-      .click();
-
-    if (shouldJustify) {
-      const justificationInput = page.locator(
-        '#transmitted_bandwidth_justification'
-      );
-      await justificationInput.waitFor({ state: 'visible', timeout: 5000 });
-      await justificationInput.fill('High data rate required');
-    }
-
-    await page
-      .locator('#minus_3db_bandwidth')
-      .fill((Math.random() * 99).toFixed(2));
-    await page
-      .locator('#minus_3db_bandwidth_before_or_after_filtering')
-      .getByText(Math.random() < 0.5 ? 'Before Filtering' : 'After Filtering')
-      .click();
-
-    await page
-      .locator('#minus_20db_bandwidth')
-      .fill((Math.random() * 99).toFixed(2));
-    await page
-      .locator('#minus_20db_bandwidth_before_or_after_filtering')
-      .getByText(Math.random() < 0.5 ? 'Before Filtering' : 'After Filtering')
-      .click();
-
-    await page
-      .locator('#minus_60db_bandwidth')
-      .fill((Math.random() * 99).toFixed(2));
-    await page
-      .locator('#minus_60db_bandwidth_before_or_after_filtering')
-      .getByText(Math.random() < 0.5 ? 'Before Filtering' : 'After Filtering')
-      .click();
-
-    await page.locator('#nature_of_modulating_signals').fill('Digital');
-    await page.locator('#emission_designator').fill('16K0F3E');
-
-    // TX
-    await page.locator('#tx_transmission_start').fill('2030-07-01T08:00');
-    await page.locator('#tx_transmission_end').fill('2030-07-01T09:00');
-    await page.locator('#tx_antenna_type').fill('Patch Antenna');
-    await page.locator('#tx_antenna_gain').fill(gain);
-    await page.locator('#tx_antenna_beamwidth').fill(beamwidth);
-    await page
-      .locator('#tx_antenna_altitude')
-      .fill((Math.random() * 100).toFixed(2));
-    await page
-      .getByLabel(/Change the altitude unit/)
-      .first()
-      .click();
-
-    // Receiver Section (first receiver in the array)
-    await fillReceiverField(page, 0, 'transmission_start', '2030-07-01T08:00');
-    await fillReceiverField(page, 0, 'transmission_end', '2030-07-01T09:00');
-    await fillReceiverField(page, 0, 'antenna_type', 'Dish Antenna');
-    await fillReceiverField(page, 0, 'antenna_gain', gain);
-    await fillReceiverField(page, 0, 'antenna_beamwidth', beamwidth);
-    await fillReceiverField(
-      page,
-      0,
-      'antenna_altitude',
-      (Math.random() * 100).toFixed(2)
-    );
-    await fillReceiverField(page, 0, 'antenna_altitude_unit', '', {
-      click: true,
-    });
-    await fillReceiverField(
-      page,
-      0,
-      'location_of_receiving_ground_station',
-      locationOption,
-      { selectOption: true }
-    );
-    await fillReceiverField(
-      page,
-      0,
-      'latitude_of_receiving_antenna',
-      (Math.random() * 180 - 90).toFixed(4)
-    );
-    await fillReceiverField(
-      page,
-      0,
-      'longitude_of_receiving_antenna',
-      (Math.random() * 360 - 180).toFixed(4)
-    );
+    await fillValidFrequency(page);
 
     await page.getByRole('button', { name: /Add Frequency/i }).click();
-    await page.waitForTimeout(400);
+    const frequencyLabel = numFrequencies === 1 ? 'frequency' : 'frequencies';
+    await expect(
+      page.getByRole('heading', {
+        name: `${i + 1} out of ${numFrequencies} ${frequencyLabel} added`,
+      })
+    ).toBeVisible();
   }
+
+  await page.getByRole('button', { name: 'Edit frequency' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Edit Frequency' })
+  ).toBeVisible();
+  await expect(page.locator('#frequency')).toHaveValue('2050');
+  await expect(page.getByRole('button', { name: 'Back' })).toBeDisabled();
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Save Draft' })).toBeDisabled();
+
+  await page.locator('#frequency').fill('2055');
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Edit Frequency' })
+  ).not.toBeVisible();
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeEnabled();
 
   // === TAB 2: Additional Information ===
   await page.getByRole('tab', { name: 'Additional Information' }).click();
@@ -215,5 +110,40 @@ test(`Login and add ${numFrequencies} frequency(ies)`, async ({ page }) => {
   // === TAB 4: Summary ===
   await page.getByRole('tab', { name: 'Summary' }).click();
 
-  await page.pause(); // You can replace this with a "Submit" if needed
+  await expect(page.getByRole('tab', { name: 'Summary' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+  await expect(page.getByLabel('Mission Name', { exact: true })).toHaveValue(
+    'Falcon Heavy Demo Mission'
+  );
+  await expect(
+    page.getByRole('cell', { name: '2055', exact: true })
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit' })).toBeEnabled();
+
+  let submittedBody = '';
+  await page.route('**/requests', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+
+    submittedBody = route.request().postData() ?? '';
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({ request: { id: 123 } }),
+    });
+  });
+
+  await page.getByRole('button', { name: 'Submit' }).click();
+
+  await expect(
+    page.getByRole('dialog', { name: 'Request Submitted' })
+  ).toBeVisible();
+  expect(submittedBody).toContain('name="mission_name"');
+  expect(submittedBody).toContain('Falcon Heavy Demo Mission');
+  expect(submittedBody).toContain('name="frequencies"');
+  expect(submittedBody).toContain('"frequency":2055');
 });

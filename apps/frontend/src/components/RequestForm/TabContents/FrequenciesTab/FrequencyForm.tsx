@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Box, Divider, Flex, Heading, Text } from '@chakra-ui/react';
-import { FieldValues, useFormContext, useFieldArray } from 'react-hook-form';
+import {
+  FieldValues,
+  useFormContext,
+  useFieldArray,
+  useWatch,
+} from 'react-hook-form';
 import { FrequencyFormDefaults } from '@slfcp/validation';
 import { FaRegEye, FaRegEyeSlash } from 'react-icons/fa';
 
@@ -60,8 +65,12 @@ export const FrequencyForm = ({
     name: 'receivers',
   });
 
-  const transmittedBandwidth = watch('transmitted_bandwidth');
+  const transmittedBandwidth = useWatch({
+    control,
+    name: 'transmitted_bandwidth',
+  });
   const receivers = watch('receivers');
+  const initialReceiverCount = initialValues?.receivers?.length ?? 0;
 
   const receiversIsDirty = formState.dirtyFields?.receivers;
 
@@ -76,10 +85,12 @@ export const FrequencyForm = ({
   }, [receiversIsDirty, trigger]);
 
   useEffect(() => {
-    reset(initialValues);
-    setShowReceiver2(initialValues?.receivers?.length > 1);
+    setShowReceiver2(initialReceiverCount > 1);
+  }, [initialReceiverCount]);
+
+  useEffect(() => {
     void trigger();
-  }, [initialValues]);
+  }, [trigger]);
 
   const clearReceiver2ValidationState = () => {
     clearErrors([...receiver2FieldNames, 'receivers']);

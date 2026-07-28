@@ -15,53 +15,25 @@ import {
 } from '@chakra-ui/react';
 import { FaTimesCircle } from 'react-icons/fa';
 
-import { InvalidField } from '../utils/Helpers';
-import {
-  additionalInfoFields,
-  frequenciesTabFields,
-  launchSiteFields,
-} from '../utils/TabFields';
+import type { VisitedRequestSteps } from '../FormContainer/requestValidationState.ts';
+import type { InvalidField } from '../utils/Helpers';
 
-interface InvalidFieldsWarningProps {
+import { buildInvalidFieldSections } from './buildInvalidFieldSections.ts';
+
+export interface InvalidFieldsWarningProps {
   isOpen: boolean;
   onClose: () => void;
   invalidFields: InvalidField[];
-  visitedTabs: { [key: number]: boolean };
+  visitedSteps: VisitedRequestSteps;
 }
 
 export const InvalidFieldsWarning = ({
   isOpen,
   onClose,
   invalidFields,
-  visitedTabs,
+  visitedSteps,
 }: InvalidFieldsWarningProps) => {
-  const launchSiteErrors = launchSiteFields
-    .map((key) => invalidFields.find((f) => f.fieldKey === key))
-    .filter((e): e is InvalidField => !!e);
-
-  const frequenciesErrors = invalidFields.filter(
-    (f) =>
-      (frequenciesTabFields as string[]).includes(f.fieldKey) ||
-      f.fieldKey.startsWith('frequencies')
-  );
-
-  const additionalInfoErrors = additionalInfoFields
-    .map((key) => invalidFields.find((f) => f.fieldKey === key))
-    .filter((e): e is InvalidField => !!e);
-
-  const sections = [
-    { label: 'Launch Site', errors: launchSiteErrors, visited: visitedTabs[0] },
-    {
-      label: 'Frequencies',
-      errors: frequenciesErrors,
-      visited: visitedTabs[1],
-    },
-    {
-      label: 'Additional Information',
-      errors: additionalInfoErrors,
-      visited: visitedTabs[2],
-    },
-  ].filter((section) => section.errors.length > 0 && section.visited);
+  const sections = buildInvalidFieldSections(invalidFields, visitedSteps);
 
   return (
     <Modal
@@ -124,9 +96,9 @@ export const InvalidFieldsWarning = ({
                     {section.label}
                   </Heading>
                   <VStack alignItems="flex-start" gap={1}>
-                    {section.label === 'Frequencies' ? (
+                    {section.summary ? (
                       <Text fontSize="16px" color="black" lineHeight="24px">
-                        See Frequencies tab to correct invalid frequencies
+                        {section.summary}
                       </Text>
                     ) : (
                       section.errors.map((field) => (

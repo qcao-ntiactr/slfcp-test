@@ -11,6 +11,7 @@ import {
   ControllerRenderProps,
   get,
   useFormContext,
+  useFormState,
 } from 'react-hook-form';
 
 import { FieldControlT } from '../Inputs/TextInput/TextInputT';
@@ -37,10 +38,10 @@ export const FieldControlWrapper = ({
 }: FieldControlWrapperProps) => {
   const {
     control,
-    formState: { errors },
     getValues,
     trigger,
   } = useFormContext();
+  const { errors } = useFormState({ control });
 
   const id = isReadOnly ? `${fieldName}_readonly` : fieldName;
 

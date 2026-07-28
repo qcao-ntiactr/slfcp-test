@@ -1,7 +1,11 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import dotenv from 'dotenv';
 
-import { fillReceiverField } from './utils';
+import {
+  fillReceiverField,
+  fillValidLaunchSite,
+  loginAndOpenRequestForm,
+} from './utils';
 
 dotenv.config();
 
@@ -14,46 +18,22 @@ const numFrequencies = parseInt(process.env.NUM_FREQ || '1', 10);
 test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
   page,
 }) => {
-  // --- Login ---
-  await page.goto(loginUrl);
-  await page.getByLabel('Email Address').fill('commercial@qa.com');
-  await page.getByLabel('Password').fill('password123');
-  await page.getByRole('button', { name: 'Sign In' }).click();
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page, 2027);
 
-  // --- Navigate to form ---
-  await page.goto(formUrl);
-
-  // === TAB 0: Launch Site ===
-  await page.locator('#mission_name').fill('Falcon Heavy Demo Mission');
-  await page.locator('#name_of_licensee').fill('SpaceX');
-  await page.locator('#call_sign').fill('SLI-001');
-  await page.locator('#name_of_launch_vehicle').fill('Falcon Heavy');
-  await page.locator('#city').fill('Cape Canaveral');
-  await page.locator('#state').selectOption({ label: 'Florida' });
-  await page.locator('#latitude').fill('28.3922');
-  await page.locator('#longitude').fill('80.6077');
-  await page.locator('#launch_datetime_primary').fill('2027-07-10T08:30');
-  await page.locator('#launch_datetime_backup').fill('2027-07-11T08:30');
-  await page.locator('#orbital_location').fill('Geostationary Orbit over 75W');
-
-  await page.locator('.forward-submit-btn').click(); // go to Frequencies tab
+  await page.getByRole('button', { name: 'Frequencies' }).click();
 
   // === TAB 1: Frequencies ===
   await page
     .getByLabel('Number Of Frequencies')
     .fill(numFrequencies.toString());
+  await expect(page.locator('#frequency')).toBeVisible();
 
   for (let i = 0; i < numFrequencies; i++) {
-    await page.waitForTimeout(200);
-
     // Fill invalid frequency: non-numeric
     await page.locator('#frequency').fill('500');
 
-    // Invalid option for transmitter location
-    await page
-      .locator('#location_of_transmitter_on_vehicle_or_platform')
-      .selectOption({ label: 'Please select an option' })
-      .catch(() => {}); // skip error if option doesn't exist
+    // Leave transmitter location at its invalid default option.
 
     // Invalid EIRP: negative number
     await page.locator('#eirp').fill('-50');
@@ -101,8 +81,9 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
     await page.locator('#tx_antenna_beamwidth').fill('9999');
     await page.locator('#tx_antenna_altitude').fill('-3333');
     await page
-      .getByLabel(/Change the altitude unit/)
-      .first()
+      .locator(
+        '#tx_antenna_altitude + [aria-label^="Change the altitude unit"]'
+      )
       .click();
 
     // Receiver Section (leave blank for validation errors)
@@ -114,11 +95,87 @@ test(`Login and add ${numFrequencies} invalid frequency(ies)`, async ({
     await fillReceiverField(page, 0, 'antenna_altitude', '');
 
     await fillReceiverField(page, 0, 'latitude_of_receiving_antenna', '999'); // invalid latitude
-    await fillReceiverField(page, 0, 'longitude_of_receiving_antenna', 'abc'); // invalid longitude
+    await fillReceiverField(page, 0, 'longitude_of_receiving_antenna', '');
 
-    await page.getByRole('button', { name: /Add Frequency/i }).click();
-    await page.waitForTimeout(400);
+    const receiverLongitude = page.locator(
+      '#receivers\\.0\\.longitude_of_receiving_antenna'
+    );
+    await expect(
+      page.getByRole('button', { name: /Add Frequency/i })
+    ).toBeDisabled();
+    await receiverLongitude.press('Tab');
   }
 
-  await page.pause(); // Observe form errors or validation behavior
+  await expect(page.getByRole('tab', { name: 'Frequencies' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+  await expect(
+    page.locator('#receivers\\.0\\.longitude_of_receiving_antenna')
+  ).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('#frequency')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('tab', { name: 'Launch Site' })).toHaveAttribute(
+    'aria-selected',
+    'true'
+  );
+
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeDisabled();
+  await expect(
+    page.locator('#receivers\\.0\\.longitude_of_receiving_antenna')
+  ).toHaveAttribute('aria-invalid', 'true');
+});
+
+test('keeps forward navigation disabled after returning to an untouched invalid frequency form', async ({
+  page,
+}) => {
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page, 2027);
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+
+  await page.getByLabel('Number Of Frequencies').fill('1');
+  await expect(page.locator('#frequency')).toHaveAttribute(
+    'aria-invalid',
+    'true'
+  );
+
+  await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+
+  await expect(
+    page.getByRole('tab', { name: 'Additional Information' })
+  ).toBeDisabled();
+  await expect(page.locator('#frequency')).toHaveAttribute(
+    'aria-invalid',
+    'true'
+  );
+});
+
+test('revalidates the frequency value while the user types', async ({
+  page,
+}) => {
+  await loginAndOpenRequestForm(page, loginUrl, formUrl);
+  await fillValidLaunchSite(page, 2027);
+  await page.getByRole('tab', { name: 'Frequencies' }).click();
+
+  await page.getByLabel('Number Of Frequencies').fill('1');
+  const frequencyInput = page.locator('#frequency');
+  const frequencyField = frequencyInput.locator('..').locator('..');
+
+  await frequencyInput.pressSequentially('500');
+  await expect(frequencyInput).toHaveAttribute('aria-invalid', 'true');
+  await expect(frequencyField).toContainText(
+    'Frequency must be within the following ranges'
+  );
+
+  await frequencyInput.selectText();
+  await frequencyInput.pressSequentially('2050');
+  await expect(frequencyInput).not.toHaveAttribute('aria-invalid', 'true');
+  await expect(frequencyField).not.toContainText(
+    'Frequency must be within the following ranges'
+  );
 });

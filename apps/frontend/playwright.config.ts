@@ -1,12 +1,15 @@
+/// <reference types="node" />
+
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './user-experience-automation-scripts',
+  testMatch: '**/*.spec.ts',
   timeout: 120000,
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: 'html',
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:5173',

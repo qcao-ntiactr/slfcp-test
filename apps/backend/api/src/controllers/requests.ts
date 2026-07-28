@@ -29,7 +29,6 @@ import {
 } from '../services/inquiries.js';
 import { UsersService } from '../services/users.js';
 import { MessageReadStatusService } from '../services/messageReadStatus.js';
-import { FrequencyType, ReceiverType } from '../services/requestDrafts.js';
 import { UsersController } from '../controllers/users.js';
 import { accessInquiry } from '../access/accessInquiry.js';
 
@@ -194,79 +193,6 @@ export const getRequests = async (req: Request, res: Response) => {
 };
 
 /**
- * Validates receivers conditionally - ensures optional receivers are fully valid if they have any values.
- * @function validateReceiversConditionally
- * @param {any} frequencies - Array of frequency objects containing receivers.
- * @returns {Array} Array of validation errors, empty if all valid.
- */
-function validateReceiversConditionally(
-  frequencies: FrequencyType[]
-): Array<{ path: string; message: string }> {
-  const errors: Array<{ path: string; message: string }> = [];
-
-  if (!Array.isArray(frequencies)) {
-    return errors;
-  }
-
-  frequencies.forEach((frequency, freqIndex) => {
-    if (!frequency.receivers || !Array.isArray(frequency.receivers)) {
-      return;
-    }
-
-    // Validate each receiver after the first one (index 0 is always required)
-    frequency.receivers.forEach(
-      (receiver: ReceiverType, receiverIndex: number) => {
-        if (receiverIndex === 0) return; // First receiver is always required
-
-        if (!receiver) return;
-
-        // Check if receiver has any meaningful values (same logic as frontend)
-        const hasAnyValue = Object.entries(receiver).some(([key, value]) => {
-          if (key === 'antenna_altitude_unit') return false; // Skip default unit value
-          if (value === undefined || value === null || value === '')
-            return false;
-          if (typeof value === 'string' && value.trim() === '') return false;
-          return true;
-        });
-
-        if (hasAnyValue) {
-          // If receiver has any values, all required fields must be present
-          const requiredFields = [
-            'transmission_start',
-            'transmission_end',
-            'antenna_type',
-            'antenna_gain',
-            'antenna_beamwidth',
-            'antenna_altitude',
-            'location_of_receiving_ground_station',
-            'longitude_of_receiving_antenna',
-            'latitude_of_receiving_antenna',
-          ];
-
-          requiredFields.forEach((field) => {
-            const value = receiver[field];
-            if (value === undefined || value === null || value === '') {
-              errors.push({
-                path: `frequencies.${freqIndex}.receivers.${receiverIndex}.${field}`,
-                message: 'Required.',
-              });
-            }
-            if (typeof value === 'string' && value.trim() === '') {
-              errors.push({
-                path: `frequencies.${freqIndex}.receivers.${receiverIndex}.${field}`,
-                message: 'Required.',
-              });
-            }
-          });
-        }
-      }
-    );
-  });
-
-  return errors;
-}
-
-/**
  * Validates a request against a dynamic schema based on available frequency ranges.
  * @async
  * @function validateRequest
@@ -285,30 +211,6 @@ async function validateRequest(requestData: RequestType) {
       sanitizeForLogs(validationResult.error.message),
     ]);
     return validationResult;
-  }
-  // Then, validate receivers conditionally
-  const receiverErrors = validateReceiversConditionally(
-    requestData.frequencies || []
-  );
-
-  if (receiverErrors.length > 0) {
-    logValidation(
-      'Conditional receiver validation failed',
-      'receiverErrors',
-      false,
-      receiverErrors.map((err) => String(err))
-    );
-    return {
-      success: false,
-      error: {
-        issues: receiverErrors.map((err) => ({
-          code: 'custom',
-          path: err.path.split('.'),
-          message: err.message,
-        })),
-        message: 'Invalid receiver data: conditional validation failed',
-      },
-    };
   }
   return validationResult;
 }
