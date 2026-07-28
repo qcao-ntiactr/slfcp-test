@@ -21,6 +21,7 @@ import { useConfirmNavigationModal } from '../../../context/ConfirmNavigationMod
 import { ConfirmationModal } from '../ConfirmationModal.tsx';
 import { InvalidFieldsWarning } from '../InvalidFieldsWarning/InvalidFieldsWarning.tsx';
 import { TabbedFormWizard } from '../../FormWizard/TabbedFormWizard.tsx';
+import { createRequestFormTestPrefill } from '../requestFormTestPrefill.ts';
 
 import {
   createRequestFormSteps,
@@ -84,6 +85,34 @@ export const FormContainer = ({
     void trigger(requestStepValidation.launchSite.fields);
   }, [request, requestStepValidation, reset, trigger]);
 
+  const validateRequestStep = (stepIndex: number) => {
+    const stepValidation = [
+      requestStepValidation.launchSite,
+      requestStepValidation.frequencies,
+      requestStepValidation.additionalInformation,
+    ][stepIndex];
+
+    if (stepValidation) {
+      void trigger(stepValidation.fields);
+    }
+  };
+
+  const prefillCurrentStep = () => {
+    const { frequencyValues, requestValues } =
+      createRequestFormTestPrefill(activeStep);
+
+    if (requestValues) {
+      reset({ ...getValues(), ...requestValues });
+    }
+
+    if (frequencyValues) {
+      frequencyFormMethods.reset(frequencyValues);
+      void frequencyFormMethods.trigger();
+    }
+
+    validateRequestStep(activeStep);
+  };
+
   const {
     isOpen: saveDraftModalIsOpen,
     onClose: saveDraftModalOnClose,
@@ -143,6 +172,7 @@ export const FormContainer = ({
       >
         <TabbedFormWizard
           headerText={headerText}
+          onHeaderClick={request ? undefined : prefillCurrentStep}
           steps={requestFormSteps}
           isSubmitting={isLoading}
           forwardNavigationBlocked={
@@ -157,6 +187,7 @@ export const FormContainer = ({
           }) => {
             setActiveStep(nextActiveStep);
             setHighestVisitedStep(nextHighestVisitedStep);
+            validateRequestStep(nextActiveStep);
           }}
           secondaryAction={{
             label: 'Save Draft',

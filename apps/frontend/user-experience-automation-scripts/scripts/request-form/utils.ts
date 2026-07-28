@@ -16,7 +16,12 @@ export const fillReceiverField = async (
   options?: { selectOption?: boolean; click?: boolean }
 ) => {
   const { selectOption = false, click = false } = options || {};
-  const element = page.locator(`#receivers\\.${receiverIndex}\\.${fieldName}`);
+  const element =
+    fieldName === 'antenna_altitude_unit'
+      ? page.locator(
+          `#receivers\\.${receiverIndex}\\.antenna_altitude + [aria-label^="Change the altitude unit"]`
+        )
+      : page.locator(`#receivers\\.${receiverIndex}\\.${fieldName}`);
   await expect(element).toBeVisible();
 
   if (click) {

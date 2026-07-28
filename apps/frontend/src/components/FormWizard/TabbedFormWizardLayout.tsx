@@ -35,6 +35,26 @@ const stepHasErrors = <TValues extends FieldValues>(
     get(errors, `root.wizardStepValidation.${step.id}`) !== undefined
   );
 
+const hasBlockingFieldError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+
+  if ('type' in error && typeof error.type === 'string') {
+    return error.type !== 'validation';
+  }
+
+  return Object.values(error).some(hasBlockingFieldError);
+};
+
+const stepHasBlockingFieldErrors = <TValues extends FieldValues>(
+  errors: FieldErrors<TValues>,
+  step: FormWizardStep<TValues>
+) =>
+  Boolean(
+    step.validation?.fields.some((field) =>
+      hasBlockingFieldError(get(errors, field))
+    )
+  );
+
 export const TabbedFormWizardLayout = <TValues extends FieldValues>({
   children,
   forwardNavigationBlocked = false,
@@ -43,6 +63,7 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
   isSubmitting,
   navigationBlocked = false,
   onCancel,
+  onHeaderClick,
   secondaryAction,
   steps,
   submitLabel = 'Submit',
@@ -69,6 +90,9 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
   const activeStepHasErrors = stepHasErrors(errors, activeStepConfig);
   const activeStepCannotAdvance =
     activeStepHasErrors || forwardNavigationBlocked;
+  const forwardButtonIsDisabled =
+    forwardNavigationBlocked ||
+    stepHasBlockingFieldErrors(errors, activeStepConfig);
   const validateActiveStep = useWizardStepValidation(activeStepConfig);
 
   handleStep(validateActiveStep);
@@ -92,7 +116,19 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
         fontSize="22px"
         padding="16px"
       >
-        {headerText}
+        {onHeaderClick ? (
+          <Button
+            type="button"
+            variant="unstyled"
+            fontSize="inherit"
+            fontWeight="inherit"
+            onClick={onHeaderClick}
+          >
+            {headerText}
+          </Button>
+        ) : (
+          headerText
+        )}
       </Heading>
 
       <Tabs index={activeStep} onChange={changeTab} isFitted>
@@ -155,7 +191,7 @@ export const TabbedFormWizardLayout = <TValues extends FieldValues>({
               type="button"
               className="forward-submit-btn"
               disabled={
-                navigationBlocked || forwardNavigationBlocked || isLoading
+                navigationBlocked || forwardButtonIsDisabled || isLoading
               }
               onClick={goForward}
               w="2xs"

@@ -48,6 +48,10 @@ test(`Login and fill good launch/frequencies but bad additional info`, async ({
 
   // === TAB 2: Additional Information (Invalid Values) ===
   await page.getByRole('tab', { name: 'Additional Information' }).click();
+  await expect(
+    page.locator('#ground_track_from_liftoff_until_payload_separation')
+  ).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByRole('tab', { name: 'Summary' })).toBeDisabled();
 
   await page
     .locator('#ground_track_from_liftoff_until_payload_separation')

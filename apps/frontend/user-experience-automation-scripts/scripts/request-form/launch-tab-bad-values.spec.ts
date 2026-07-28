@@ -26,13 +26,13 @@ test('Launch Site tab with invalid values', async ({ page }) => {
   await page.locator('#launch_datetime_backup').fill('');
   await page.locator('#orbital_location').fill(''); // Empty orbital location
 
-  // Try to go to the next tab (should trigger validation errors)
-  await page.getByRole('button', { name: 'Frequencies' }).click();
-
   await expect(page.getByRole('tab', { name: 'Launch Site' })).toHaveAttribute(
     'aria-selected',
     'true'
   );
+  await expect(
+    page.getByRole('button', { name: 'Frequencies' })
+  ).toBeDisabled();
   await expect(page.locator('#state')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#latitude')).toHaveAttribute(
     'aria-invalid',

@@ -31,6 +31,7 @@ interface SecondaryAction {
 
 export interface TabbedFormWizardProps<TValues extends FieldValues> {
   headerText: string;
+  onHeaderClick?: () => void;
   steps: readonly FormWizardStep<TValues>[];
   isSubmitting: boolean;
   onCancel: () => void;
